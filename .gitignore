@@ -8,14 +8,15 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+/build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Root-only: do not ignore frontend/lib
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -149,6 +150,8 @@ activemq-data/
 
 # Environments
 .env
+.env.local
+.env.*.local
 .envrc
 .venv
 env/
@@ -216,3 +219,33 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Cursor rules and skills stay on the developer machine
+.cursor/
+
+# Node / Next.js
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.turbo/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# ChromaDB local persistence
+.chroma/
+**/chroma.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.pem
