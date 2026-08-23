@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { JdAnalyzeCard } from "@/components/dashboard/JdAnalyzeCard";
+import { SkillsCard } from "@/components/dashboard/SkillsCard";
 import { Card } from "@/components/ui/Card";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -49,11 +51,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">
+    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 md:px-6 md:py-12">
       <h1 className="font-serif text-3xl text-navy">Dashboard</h1>
-      <Card className="mt-8">
-        <p className="text-ink-muted">Your gap analysis will appear here.</p>
-      </Card>
+      <SkillsCard />
+      <JdAnalyzeCard />
     </section>
   );
 }

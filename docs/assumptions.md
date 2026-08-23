@@ -6,7 +6,8 @@ Decisions made where docs were missing or conflicting. Change these only with an
 
 - **MVP includes JD extraction and gap analysis** (not tracker-only).
 - **V2** is notes RAG, quizzes, spaced repetition, analytics, email reminders.
-- **LangChain only** for orchestration. Do not add LangGraph unless requested.
+- **LangChain only** for orchestration when a chain is needed. Do not add LangGraph unless requested.
+- **MVP JD parse** calls **Groq directly** (`httpx` to Groq's OpenAI-compatible chat API) with a strict JSON schema and Pydantic validation (one retry). LangChain is not used for this slice.
 - **ChromaDB only** for vectors. Do not add FAISS/Pinecone/Weaviate unless requested.
 - **Supabase** is the default for Postgres + Auth + Storage. Neon is an alternative for Postgres if Auth/Storage stay on Supabase.
 - **Backend host default: Render.** Fly.io is the documented alternative.
@@ -32,8 +33,11 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 
 ## Gap matching
 
-- Normalize then exact match first; embeddings for remainder when enabled.
-- Treat Java vs JavaScript-style collisions as evaluation cases, not afterthoughts.
+- Trim, collapse whitespace, lowercase.
+- Drop whole-token suffixes such as `design`, `development`, `architecture`.
+- Then match if phrases are equal, one phrase is contained in the other (remainder empty, `s`/`es`, or a suffix word), token plurals (`api`/`apis`), or `difflib.SequenceMatcher` ratio ≥ 0.86.
+- `React` matches `react`. `REST APIs` matches `REST API design`. `Java` does **not** match `JavaScript` (remainder `script`).
+- Embeddings / semantic match for leftover cases stay later.
 
 ## Auth on the frontend
 
