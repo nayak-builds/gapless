@@ -1,13 +1,27 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import asyncpg
 
 from config import get_settings
+from db import close_pool, get_pool, init_pool
+from errors import register_error_handlers
+from routers import gaps, jd, skills
 
-app = FastAPI(title="Gapless API", version="0.0.1")
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await init_pool()
+    yield
+    await close_pool()
+
+
+app = FastAPI(title="Gapless API", version="0.0.1", lifespan=lifespan)
+register_error_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,6 +30,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(skills.router)
+app.include_router(jd.router)
+app.include_router(gaps.router)
 
 
 class HealthResponse(BaseModel):
@@ -44,14 +62,20 @@ async def health_db() -> JSONResponse:
         )
 
     try:
-        if "supabase.co" in dsn:
-            conn = await asyncpg.connect(dsn, timeout=10, ssl="require")
-        else:
-            conn = await asyncpg.connect(dsn, timeout=10)
-        try:
+        pool = get_pool()
+    except RuntimeError:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "db": "disconnected",
+                "message": "Database pool is not initialized.",
+            },
+        )
+
+    try:
+        async with pool.acquire() as conn:
             await conn.fetchval("SELECT 1")
-        finally:
-            await conn.close()
     except Exception as exc:
         return JSONResponse(
             status_code=503,
