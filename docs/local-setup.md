@@ -2,17 +2,20 @@
 
 ## Frontend (scaffolded)
 
-Requires Node 20.
+Requires Node 20. Use a **dev** Supabase project (not production).
 
 ```powershell
 cd frontend
+copy .env.example .env.local
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Routes: `/`, `/signin`, `/dashboard`.
+Edit `frontend/.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon key only — never the service role). Restart `npm run dev` after changing `NEXT_PUBLIC_*` values.
 
-There is no backend or auth yet. Do not point this UI at production Supabase.
+Open [http://localhost:3000](http://localhost:3000). Routes: `/`, `/signin` (email + password), `/dashboard` (session required). For local signup without a confirmation email, turn off **Confirm email** in the dev project's Auth settings.
+
+FastAPI login (`POST /auth/login`) is not used for this UI yet. Do not point this UI at production Supabase.
 
 ## Backend (scaffolded)
 
