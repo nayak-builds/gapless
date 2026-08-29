@@ -14,7 +14,7 @@ Browser
                     ├── Supabase Auth (token verification)
                     ├── Supabase Storage (resumes; V2 notes)
                     ├── LangChain → LLM provider
-                    └── ChromaDB embedded (Version 2 RAG only)
+                    └── pgvector on PostgreSQL (Version 2 RAG)
 ```
 
 ## Trust boundary
@@ -23,7 +23,6 @@ Browser
 |---|---|
 | UI, Supabase Auth client (anon key) | `SUPABASE_SERVICE_ROLE_KEY` |
 | Calls to Gapless FastAPI | Direct PostgreSQL |
-| | Direct ChromaDB |
 | | OpenAI / Groq / OpenRouter / Azure SDKs |
 
 FastAPI owns: authentication verification, authorization, validation, business logic, database access, LLM calls, RAG orchestration, file processing, rate limiting, error translation, logging, security enforcement.
@@ -44,7 +43,7 @@ See [api.md](api.md). New endpoints require schema, authn, authz, errors, tests,
 
 ## Data
 
-PostgreSQL holds relational state. ChromaDB holds V2 vectors. Do not run two competing vector databases.
+PostgreSQL holds relational state and V2 vectors (`embeddings.embedding` via pgvector). Do not run a second vector database.
 
 Important indexes when tables exist:
 

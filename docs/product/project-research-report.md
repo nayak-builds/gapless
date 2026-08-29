@@ -61,7 +61,7 @@ Repository blueprint also requires: landing page, dashboard, basic profile, core
 
 ## Version 2 and later
 
-**Version 2:** personal notes (PDF/Markdown), ingestion, chunking, embeddings, ChromaDB, retrieval, RAG, quiz generate/submit/score, spaced repetition, progress/weak-topic analytics, email reminders, richer search, usage dashboard.
+**Version 2:** personal notes (PDF/Markdown), ingestion, chunking, embeddings, pgvector retrieval, RAG, quiz generate/submit/score, spaced repetition, progress/weak-topic analytics, email reminders, richer search, usage dashboard.
 
 **Future (not V2 unless explicitly requested):** email parsing for application status, company interview-question hubs, public readiness scores, push notifications, org SSO, extra analytics.
 
@@ -70,14 +70,14 @@ Repository blueprint also requires: landing page, dashboard, basic profile, core
 ```text
 Next.js (React, Tailwind)
   └── FastAPI (Pydantic, async)
-        ├── PostgreSQL (users, JDs, applications, skills, gaps)
+        ├── PostgreSQL (users, JDs, applications, skills, gaps, note embeddings via pgvector)
         ├── LLM via LangChain (extraction; later RAG)
-        └── ChromaDB (Version 2 — notes embeddings)
+        └── (vectors in Postgres, not a separate store)
 ```
 
 Deploy: Vercel (frontend) + Render or Fly.io (backend) + Supabase (Postgres, Auth, Storage).
 
-The frontend never talks to PostgreSQL, ChromaDB, or LLM providers.
+The frontend never talks to PostgreSQL or LLM providers.
 
 ## Stack
 
@@ -87,7 +87,7 @@ The frontend never talks to PostgreSQL, ChromaDB, or LLM providers.
 | Backend | Python, FastAPI, Pydantic, async |
 | Data / auth / files | PostgreSQL, Supabase Auth, Supabase Storage |
 | LLM | LangChain; provider configurable (OpenAI, Groq, OpenRouter, Azure OpenAI, Ollama for dev) |
-| RAG (V2) | Embedded ChromaDB |
+| RAG (V2) | pgvector on Supabase Postgres |
 | CI / monitoring | GitHub Actions; platform logs + Sentry |
 
 Prefer free/low-cost managed infrastructure. Mitigate LLM cost with rate limits, input caps, and cheaper models for extraction.

@@ -16,7 +16,7 @@ Required vs owned. Categories: matched, missing, partial (if supported), importa
 
 ## RAG (Version 2)
 
-Ingest (implemented): notes (PDF / Markdown / paste) → chunk → embed (Chroma default MiniLM) → per-user collection. Retrieval: query that collection with the gap `skill_name`, keep top 3 chunks with L2 distance ≤ 1.15.
+Ingest (implemented): notes (PDF / Markdown / paste) → chunk → ONNX MiniLM (384-d) → `embeddings.embedding` (pgvector). Retrieval: cosine `<=>` for the gap `skill_name`, keep top 3 chunks with distance ≤ 0.90 (or the nearest chunk if all are higher).
 
 Do not add hybrid search, rerankers, or hosted vector DBs until evaluation says the simple pipeline fails.
 

@@ -15,7 +15,7 @@ Rules are **always-on or file-scoped constraints**. Skills are **workflows** you
 | `backend-fastapi` | `backend/**/*.py` | API layers, errors, jobs |
 | `database-postgresql` | db + backend Python | Schema, migrations, indexes |
 | `ai-llm` | backend Python | LangChain, structured output, JD pipeline |
-| `rag` | description | V2 ChromaDB RAG |
+| `rag` | description | V2 pgvector RAG |
 | `testing-quality` | tests | pytest / Playwright |
 | `deployment-devops` | CI/deploy files | Vercel, Render/Fly, envs |
 | `documentation` | docs | Keep docs aligned with code |

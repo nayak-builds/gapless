@@ -35,7 +35,7 @@ Do not copy production values into `.env.local`.
 
 **Limits:** `MAX_JD_CHARS`, `MAX_NOTE_CHARS`, `LLM_RATE_LIMIT_PER_MINUTE`, `NOTES_RATE_LIMIT_PER_MINUTE`
 
-**Chroma (V2 ingest):** `CHROMA_PATH` (backend local persist dir; default `backend/chroma_data`)
+**Embeddings (V2 ingest):** `EMBED_CACHE` (ONNX MiniLM download cache; default `backend/embed_cache`). Vectors are stored in Postgres, not on disk.
 
 Frontend must not receive service-role or LLM keys. See `backend/.env.example` and `frontend/.env.example`.
 
@@ -57,7 +57,7 @@ Copy **production** values here. Do not reuse local/dev project secrets if you h
 | `MAX_NOTE_CHARS` | Optional; default `100000` |
 | `LLM_RATE_LIMIT_PER_MINUTE` | Optional; default `10` |
 | `NOTES_RATE_LIMIT_PER_MINUTE` | Optional; default `10` |
-| `CHROMA_PATH` | Optional; Chroma persist directory on the API host |
+| `EMBED_CACHE` | Optional; ONNX MiniLM download cache on the API host (vectors are in Postgres) |
 
 Also on Render: start command in the `backend` directory, e.g. `uvicorn main:app --host 0.0.0.0 --port $PORT`.
 

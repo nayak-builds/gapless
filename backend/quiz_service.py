@@ -4,7 +4,6 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-import chroma_store
 from db import acquire
 from llm import generate_quiz_from_chunks
 from rate_limit import enforce_llm_rate_limit
@@ -14,6 +13,7 @@ from schemas import (
     QuizQuestionResult,
     SubmitQuizResponse,
 )
+from vector_store import query_skill_chunks
 
 NO_NOTES_MESSAGE = "No notes found for this skill yet — add some notes first"
 
@@ -40,7 +40,7 @@ async def _owned_gap(user_id: str, gap_id: UUID) -> tuple[UUID, str]:
 
 async def generate_quiz(user_id: str, gap_id: UUID) -> GenerateQuizResponse:
     owned_id, skill_name = await _owned_gap(user_id, gap_id)
-    chunks = chroma_store.query_skill_chunks(user_id, skill_name)
+    chunks = await query_skill_chunks(user_id, skill_name)
     if not chunks:
         raise HTTPException(status_code=422, detail=NO_NOTES_MESSAGE)
     enforce_llm_rate_limit(user_id)
