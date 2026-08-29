@@ -244,6 +244,7 @@ blob-report/
 # ChromaDB local persistence
 .chroma/
 **/chroma.sqlite3
+backend/chroma_data/
 
 # OS / editor
 .DS_Store

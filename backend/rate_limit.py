@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from config import get_settings
 
 _hits: dict[str, deque[float]] = defaultdict(deque)
+_note_hits: dict[str, deque[float]] = defaultdict(deque)
 
 
 def enforce_llm_rate_limit(user_id: str) -> None:
@@ -19,6 +20,22 @@ def enforce_llm_rate_limit(user_id: str) -> None:
         raise HTTPException(
             status_code=429,
             detail="Too many analyses. Wait a minute and try again.",
+            headers={"Retry-After": "60"},
+        )
+    bucket.append(now)
+
+
+def enforce_notes_rate_limit(user_id: str) -> None:
+    limit = get_settings().notes_rate_limit_per_minute
+    now = time.monotonic()
+    window = 60.0
+    bucket = _note_hits[user_id]
+    while bucket and now - bucket[0] > window:
+        bucket.popleft()
+    if len(bucket) >= limit:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many notes uploaded. Wait a minute and try again.",
             headers={"Retry-After": "60"},
         )
     bucket.append(now)

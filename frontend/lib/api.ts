@@ -65,12 +65,15 @@ export function toUserMessage(err: unknown, fallback: string): string {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
+
   try {
     response = await fetch(`${apiBase()}${path}`, {
       ...init,
       headers: {
         Accept: "application/json",
-        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(init?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
         Authorization: await authHeader(),
         ...init?.headers,
       },
@@ -189,6 +192,41 @@ export async function patchApplication(
 
 export async function deleteApplication(id: string): Promise<{ id: string }> {
   return request<{ id: string }>(`/applications/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export type NoteListItem = {
+  id: string;
+  title: string | null;
+  created_at: string;
+  chunk_count: number;
+};
+
+export async function listNotes(): Promise<NoteListItem[]> {
+  const data = await request<{ notes: NoteListItem[] }>("/notes");
+  return data.notes;
+}
+
+export async function createNote(
+  title: string,
+  content: string,
+  file: File | null,
+): Promise<NoteListItem> {
+  const body = new FormData();
+  body.append("title", title);
+  body.append("content", content);
+  if (file) {
+    body.append("file", file);
+  }
+  return request<NoteListItem>("/notes", {
+    method: "POST",
+    body,
+  });
+}
+
+export async function deleteNote(id: string): Promise<{ id: string }> {
+  return request<{ id: string }>(`/notes/${id}`, {
     method: "DELETE",
   });
 }

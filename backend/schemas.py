@@ -70,3 +70,18 @@ class ApplicationListResponse(BaseModel):
 
 class DeleteApplicationResponse(BaseModel):
     id: UUID
+
+
+class NoteListItem(BaseModel):
+    id: UUID
+    title: str | None = None
+    created_at: datetime
+    chunk_count: int
+
+
+class NoteListResponse(BaseModel):
+    notes: list[NoteListItem]
+
+
+class DeleteNoteResponse(BaseModel):
+    id: UUID
