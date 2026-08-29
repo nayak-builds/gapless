@@ -13,7 +13,13 @@ export function getSupabaseBrowserEnv(): { url: string; anonKey: string } {
   return { url, anonKey };
 }
 
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createSupabaseBrowserClient() {
+  if (browserClient) {
+    return browserClient;
+  }
   const { url, anonKey } = getSupabaseBrowserEnv();
-  return createBrowserClient(url, anonKey);
+  browserClient = createBrowserClient(url, anonKey);
+  return browserClient;
 }

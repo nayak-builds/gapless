@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -41,3 +42,31 @@ class GapSkillOut(BaseModel):
 class ComputeGapsResponse(BaseModel):
     matched: list[GapSkillOut]
     missing: list[GapSkillOut]
+
+
+ApplicationStatus = Literal["applied", "interviewing", "offer", "rejected"]
+
+
+class CreateApplicationBody(BaseModel):
+    jd_id: UUID
+
+
+class PatchApplicationBody(BaseModel):
+    status: ApplicationStatus
+
+
+class ApplicationOut(BaseModel):
+    id: UUID
+    jd_id: UUID
+    status: ApplicationStatus
+    applied_at: datetime
+    company: str | None = None
+    role_title: str | None = None
+
+
+class ApplicationListResponse(BaseModel):
+    applications: list[ApplicationOut]
+
+
+class DeleteApplicationResponse(BaseModel):
+    id: UUID

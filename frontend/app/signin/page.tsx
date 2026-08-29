@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -16,6 +16,29 @@ export default function SignInPage() {
   const [pending, setPending] = useState(false);
 
   const isSignUp = mode === "signup";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bounceIfSignedIn() {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!cancelled && user) {
+          router.replace("/dashboard");
+        }
+      } catch {
+        // Stay on sign-in if the client cannot read a session.
+      }
+    }
+
+    void bounceIfSignedIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   function toggleMode() {
     setMode(isSignUp ? "signin" : "signup");

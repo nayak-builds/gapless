@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+import { GetStartedButton } from "@/components/home/GetStartedButton";
 
 export default function HomePage() {
   return (
@@ -12,7 +12,7 @@ export default function HomePage() {
         prep tied to the roles they are actually applying to.
       </p>
       <div className="mt-8">
-        <Button href="/signin">Get Started</Button>
+        <GetStartedButton />
       </div>
     </section>
   );

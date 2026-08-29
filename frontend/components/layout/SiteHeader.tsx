@@ -11,6 +11,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const onDashboard = pathname === "/dashboard";
+  const onTracker = pathname === "/tracker";
   const onSignIn = pathname === "/signin";
   const [email, setEmail] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -75,6 +76,15 @@ export function SiteHeader() {
             )}
           >
             Dashboard
+          </Link>
+          <Link
+            href="/tracker"
+            className={cn(
+              "px-3 text-sm font-medium",
+              onTracker ? "text-accent" : "text-ink-muted hover:text-ink",
+            )}
+          >
+            Tracker
           </Link>
           {email ? (
             <>
