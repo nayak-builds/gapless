@@ -3,7 +3,7 @@ from io import BytesIO
 from fastapi import HTTPException, UploadFile
 from pypdf import PdfReader
 
-_MAX_FILE_BYTES = 2 * 1024 * 1024
+_MAX_FILE_BYTES = 5 * 1024 * 1024
 _ALLOWED_SUFFIXES = {".pdf", ".md", ".markdown", ".txt"}
 
 
@@ -39,7 +39,7 @@ async def extract_upload_text(upload: UploadFile) -> str:
         )
     data = await upload.read()
     if len(data) > _MAX_FILE_BYTES:
-        raise HTTPException(status_code=422, detail="File is too large (max 2 MB)")
+        raise HTTPException(status_code=422, detail="File is too large (max 5 MB)")
     if not data:
         raise HTTPException(status_code=422, detail="The uploaded file is empty")
     if suffix == ".pdf":

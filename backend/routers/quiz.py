@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from auth import get_current_user_id
 from quiz_service import generate_quiz, submit_quiz
+from rate_limit import enforce_llm_rate_limit
 from schemas import GenerateQuizBody, GenerateQuizResponse, SubmitQuizBody, SubmitQuizResponse
 
 router = APIRouter(tags=["quiz"])
@@ -12,6 +13,7 @@ async def post_quiz_generate(
     body: GenerateQuizBody,
     user_id: str = Depends(get_current_user_id),
 ) -> GenerateQuizResponse:
+    enforce_llm_rate_limit(user_id)
     return await generate_quiz(user_id, body.gap_id)
 
 

@@ -6,7 +6,6 @@ from fastapi import HTTPException
 
 from db import acquire
 from llm import generate_quiz_from_chunks
-from rate_limit import enforce_llm_rate_limit
 from schemas import (
     GenerateQuizResponse,
     QuizQuestion,
@@ -43,7 +42,6 @@ async def generate_quiz(user_id: str, gap_id: UUID) -> GenerateQuizResponse:
     chunks = await query_skill_chunks(user_id, skill_name)
     if not chunks:
         raise HTTPException(status_code=422, detail=NO_NOTES_MESSAGE)
-    enforce_llm_rate_limit(user_id)
     questions = await generate_quiz_from_chunks(skill_name, chunks)
     return GenerateQuizResponse(
         gap_id=owned_id,

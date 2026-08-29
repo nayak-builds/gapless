@@ -13,6 +13,8 @@ import {
   type NoteListItem,
 } from "@/lib/api";
 
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
 function formatCreatedAt(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
@@ -55,6 +57,24 @@ export function NotesPanel() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+    if (!trimmedTitle && !trimmedContent && !file) {
+      setError("Add a title and paste text or attach a file.");
+      return;
+    }
+    if (!trimmedTitle) {
+      setError("Add a title for this note.");
+      return;
+    }
+    if (!trimmedContent && !file) {
+      setError("Paste note text or attach a PDF, Markdown, or text file.");
+      return;
+    }
+    if (file && file.size > MAX_FILE_BYTES) {
+      setError("File is too large (max 5 MB).");
+      return;
+    }
     setSaving(true);
     try {
       const created = await createNote(title, content, file);
@@ -99,8 +119,8 @@ export function NotesPanel() {
       <Card>
         <h2 className="font-serif text-2xl text-navy">Upload a note</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          Paste text or attach a PDF or Markdown file. We store chunks and
-          embeddings for later quizzes — not generated yet.
+          Paste text or attach a PDF or Markdown file (max 5 MB). Quizzes pull
+          from these notes against missing skills on the dashboard.
         </p>
         <form className="mt-6 flex flex-col gap-4" onSubmit={(e) => void handleSubmit(e)}>
           <Input
@@ -128,7 +148,17 @@ export function NotesPanel() {
             accept=".pdf,.md,.markdown,.txt,application/pdf,text/markdown,text/plain"
             disabled={saving}
             ref={fileInputRef}
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            onChange={(event) => {
+              const next = event.target.files?.[0] ?? null;
+              if (next && next.size > MAX_FILE_BYTES) {
+                setError("File is too large (max 5 MB).");
+                setFile(null);
+                event.target.value = "";
+                return;
+              }
+              setError(null);
+              setFile(next);
+            }}
           />
           <Button
             type="submit"
