@@ -32,12 +32,14 @@ async def parse_jd(
         async with conn.transaction():
             jd_id = await conn.fetchval(
                 """
-                insert into public.job_descriptions (user_id, raw_text)
-                values ($1::uuid, $2)
+                insert into public.job_descriptions (user_id, raw_text, company, role_title)
+                values ($1::uuid, $2, $3, $4)
                 returning id
                 """,
                 user_id,
                 raw,
+                extracted.company,
+                extracted.role_title,
             )
             for skill in extracted.skills:
                 await conn.execute(

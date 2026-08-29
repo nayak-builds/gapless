@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import {
   ApiError,
   computeGaps,
+  createApplication,
   parseJd,
   type ComputeGapsResponse,
 } from "@/lib/api";
@@ -17,22 +18,47 @@ export function JdAnalyzeCard() {
   const [error, setError] = useState<string | null>(null);
   const [seniority, setSeniority] = useState<string | null>(null);
   const [result, setResult] = useState<ComputeGapsResponse | null>(null);
+  const [jdId, setJdId] = useState<string | null>(null);
+  const [tracking, setTracking] = useState(false);
+  const [trackMessage, setTrackMessage] = useState<string | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setTrackMessage(null);
+    setTrackError(null);
     setPending(true);
     try {
       const parsed = await parseJd(rawText);
       const gaps = await computeGaps(parsed.jd_id);
       setSeniority(parsed.seniority);
       setResult(gaps);
+      setJdId(parsed.jd_id);
     } catch (err) {
       setResult(null);
       setSeniority(null);
+      setJdId(null);
       setError(err instanceof ApiError ? err.message : "Could not analyze the job description");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function handleTrack() {
+    if (!jdId) return;
+    setTrackError(null);
+    setTrackMessage(null);
+    setTracking(true);
+    try {
+      await createApplication(jdId);
+      setTrackMessage("Application added to your tracker.");
+    } catch (err) {
+      setTrackError(
+        err instanceof ApiError ? err.message : "Could not track this application",
+      );
+    } finally {
+      setTracking(false);
     }
   }
 
@@ -65,6 +91,7 @@ export function JdAnalyzeCard() {
       </Card>
 
       {result ? (
+        <>
         <div className="grid gap-8 md:grid-cols-2">
           <Card>
             <h3 className="font-serif text-xl text-navy">Skills you have</h3>
@@ -101,6 +128,26 @@ export function JdAnalyzeCard() {
             )}
           </Card>
         </div>
+        <div className="flex flex-col items-start gap-2">
+          <Button
+            type="button"
+            disabled={tracking || !jdId}
+            onClick={() => void handleTrack()}
+          >
+            {tracking ? "Tracking…" : "Track this application"}
+          </Button>
+          {trackMessage ? (
+            <p className="text-sm text-success" role="status">
+              {trackMessage}
+            </p>
+          ) : null}
+          {trackError ? (
+            <p className="text-sm text-danger" role="alert">
+              {trackError}
+            </p>
+          ) : null}
+        </div>
+      </>
       ) : null}
     </div>
   );
