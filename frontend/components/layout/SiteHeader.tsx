@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -23,15 +24,15 @@ export function SiteHeader() {
     try {
       const supabase = createSupabaseBrowserClient();
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      void supabase.auth.getSession().then((result) => {
         if (!cancelled) {
-          setEmail(session?.user.email ?? null);
+          setEmail(result.data.session?.user.email ?? null);
         }
       });
 
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
         setEmail(session?.user.email ?? null);
       });
       unsubscribe = () => subscription.unsubscribe();
