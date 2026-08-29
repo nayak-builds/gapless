@@ -4,11 +4,12 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
-import chroma_store
 from chunking import chunk_text
 from config import get_settings
 from db import acquire
+from embed import embed_texts
 from schemas import NoteListItem
+from vector_store import insert_note_with_embeddings
 
 logger = logging.getLogger(__name__)
 
@@ -83,72 +84,46 @@ async def create_note(user_id: str, title: str, pasted: str, uploaded: str) -> N
 
     note_id = uuid4()
     embedding_ids = [uuid4() for _ in chunks]
-
     try:
-        await asyncio.to_thread(
-            chroma_store.add_chunks,
-            user_id,
-            note_id,
-            embedding_ids,
-            chunks,
-        )
+        vectors = await asyncio.to_thread(embed_texts, chunks)
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("Chroma add failed")
+        logger.exception("Embedding failed")
         raise HTTPException(
             status_code=503,
             detail="Could not store note embeddings. Please try again.",
         ) from exc
 
     try:
-        async with acquire() as conn:
-            async with conn.transaction():
-                await conn.execute(
-                    """
-                    insert into public.notes (id, user_id, title, content)
-                    values ($1, $2::uuid, $3, $4)
-                    """,
-                    note_id,
-                    user_id,
-                    heading,
-                    body,
-                )
-                await conn.executemany(
-                    """
-                    insert into public.embeddings (id, note_id, chunk_text, chunk_index)
-                    values ($1, $2, $3, $4)
-                    """,
-                    [
-                        (eid, note_id, chunk, index)
-                        for index, (eid, chunk) in enumerate(zip(embedding_ids, chunks))
-                    ],
-                )
-            row = await conn.fetchrow(
-                """
-                select id, title, created_at
-                from public.notes
-                where id = $1 and user_id = $2::uuid
-                """,
-                note_id,
-                user_id,
-            )
+        await insert_note_with_embeddings(
+            user_id,
+            note_id,
+            heading,
+            body,
+            chunks,
+            embedding_ids,
+            vectors,
+        )
+    except HTTPException:
+        raise
     except Exception as exc:
-        logger.exception("Postgres note insert failed after Chroma add")
-        try:
-            await asyncio.to_thread(
-                chroma_store.delete_note_vectors,
-                user_id,
-                note_id,
-                embedding_ids,
-            )
-        except Exception:
-            logger.exception("Chroma rollback after failed note insert also failed")
+        logger.exception("Postgres note insert failed")
         raise HTTPException(
             status_code=503,
             detail="Could not save this note. Please try again.",
         ) from exc
 
+    async with acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            select id, title, created_at
+            from public.notes
+            where id = $1 and user_id = $2::uuid
+            """,
+            note_id,
+            user_id,
+        )
     if row is None:
         raise HTTPException(status_code=503, detail="Could not save this note. Please try again.")
 
@@ -161,36 +136,6 @@ async def create_note(user_id: str, title: str, pasted: str, uploaded: str) -> N
 
 
 async def delete_note(user_id: str, note_id: UUID) -> UUID:
-    async with acquire() as conn:
-        note = await conn.fetchrow(
-            """
-            select id
-            from public.notes
-            where id = $1 and user_id = $2::uuid
-            """,
-            note_id,
-            user_id,
-        )
-        if note is None:
-            raise HTTPException(status_code=404, detail="Note not found")
-        rows = await conn.fetch(
-            """
-            select id
-            from public.embeddings
-            where note_id = $1
-            order by chunk_index
-            """,
-            note_id,
-        )
-
-    embedding_ids = [row["id"] for row in rows]
-    await asyncio.to_thread(
-        chroma_store.delete_note_vectors,
-        user_id,
-        note_id,
-        embedding_ids,
-    )
-
     async with acquire() as conn:
         deleted_id = await conn.fetchval(
             """

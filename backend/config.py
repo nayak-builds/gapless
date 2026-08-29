@@ -21,7 +21,7 @@ class Settings(BaseModel):
     max_note_chars: int = Field(default=100000)
     llm_rate_limit_per_minute: int = Field(default=10)
     notes_rate_limit_per_minute: int = Field(default=10)
-    chroma_path: str = Field(default="")
+    embed_cache: str = Field(default="")
 
 
 def parse_cors_origins() -> list[str]:
@@ -49,6 +49,6 @@ def get_settings() -> Settings:
         max_note_chars=int(os.getenv("MAX_NOTE_CHARS", "100000")),
         llm_rate_limit_per_minute=int(os.getenv("LLM_RATE_LIMIT_PER_MINUTE", "10")),
         notes_rate_limit_per_minute=int(os.getenv("NOTES_RATE_LIMIT_PER_MINUTE", "10")),
-        chroma_path=os.getenv("CHROMA_PATH", "").strip()
-        or str(_BACKEND_DIR / "chroma_data"),
+        embed_cache=os.getenv("EMBED_CACHE", "").strip()
+        or str(_BACKEND_DIR / "embed_cache"),
     )

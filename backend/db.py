@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import asyncpg
+from pgvector.asyncpg import register_vector
 
 from config import get_settings
 
@@ -11,10 +12,20 @@ logger = logging.getLogger(__name__)
 _pool: asyncpg.Pool | None = None
 
 
+async def _init_connection(conn: asyncpg.Connection) -> None:
+    await register_vector(conn)
+
+
 def _connect_kwargs(dsn: str) -> dict:
     # min_size=0: do not open a connection during uvicorn startup.
     # Direct db.*.supabase.co:5432 often hangs on Windows IPv6 until timeout.
-    kwargs: dict = {"dsn": dsn, "min_size": 0, "max_size": 5, "timeout": 30}
+    kwargs: dict = {
+        "dsn": dsn,
+        "min_size": 0,
+        "max_size": 5,
+        "timeout": 30,
+        "init": _init_connection,
+    }
     if "supabase.co" in dsn or "supabase.com" in dsn:
         kwargs["ssl"] = "require"
     return kwargs

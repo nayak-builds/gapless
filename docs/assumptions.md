@@ -8,7 +8,7 @@ Decisions made where docs were missing or conflicting. Change these only with an
 - **V2** is notes RAG, quizzes, spaced repetition, analytics, email reminders.
 - **LangChain only** for orchestration when a chain is needed. Do not add LangGraph unless requested.
 - **MVP JD parse** calls **Groq directly** (`httpx` to Groq's OpenAI-compatible chat API) with a strict JSON schema and Pydantic validation (one retry). LangChain is not used for this slice.
-- **ChromaDB only** for vectors. Do not add FAISS/Pinecone/Weaviate unless requested.
+- **pgvector on Supabase** for vectors. Do not add ChromaDB, FAISS, Pinecone, or Weaviate unless requested.
 - **Supabase** is the default for Postgres + Auth + Storage. Neon is an alternative for Postgres if Auth/Storage stay on Supabase.
 - **Backend host default: Render.** Fly.io is the documented alternative.
 - **Next.js App Router** (not Pages Router).
@@ -24,13 +24,13 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 | Parameter | Initial value |
 |---|---|
 | Chunking | Paragraph / line breaks first, then a **800-character** window (~200 tokens at 4 chars/token) with 100-character overlap. A ~2300-character note is multiple chunks even as one paragraph |
-| Embedding model | Chroma `DefaultEmbeddingFunction` (ONNX MiniLM). No extra embedding API key |
-| Similarity | Cosine similarity via Chroma default embeddings; query returns L2 `distance` on the default collection |
+| Embedding model | Local ONNX MiniLM (`all-MiniLM-L6-v2`), 384 dimensions. No extra embedding API key |
+| Similarity | pgvector cosine distance (`<=>`) |
 | top-k | **3** for quiz generation (`POST /quiz/generate`) |
-| Similarity threshold | Keep chunks with Chroma `distance <= 1.15`. If none remain, return 422 and skip Groq |
-| Retrieval | Dense only; per-user Chroma collection `u_{user_id without hyphens}` plus `user_id` metadata |
+| Similarity threshold | Keep chunks with cosine distance `<= 0.90`. If all are higher but the user has vectors, use the nearest chunk. Empty embeddings still 422 |
+| Retrieval | Dense only; user-scoped `embeddings` joined to `notes.user_id` |
 | Notes formats | PDF, Markdown, plain text |
-| Persist path | `CHROMA_PATH` (default `backend/chroma_data`). Render free disk is ephemeral |
+| Model cache | `EMBED_CACHE` (default `backend/embed_cache`). Ephemeral on Render; vectors live in Postgres |
 
 ## Gap matching
 

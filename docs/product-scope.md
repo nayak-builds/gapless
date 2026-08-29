@@ -29,7 +29,7 @@ The MVP **includes** JD extraction and gap analysis. Sequencing inside MVP is al
 ## Version 2
 
 - Personal notes (PDF / Markdown)
-- Ingestion, chunking, embeddings, ChromaDB, retrieval, RAG
+- Ingestion, chunking, embeddings, pgvector retrieval, RAG
 - Quiz generation, submission, scoring
 - Spaced-repetition scheduling
 - Personal progress analytics and weak-topic analysis

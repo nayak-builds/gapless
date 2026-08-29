@@ -241,10 +241,11 @@ playwright-report/
 test-results/
 blob-report/
 
-# ChromaDB local persistence
+# ChromaDB local persistence (legacy; vectors now live in Postgres)
 .chroma/
 **/chroma.sqlite3
 backend/chroma_data/
+backend/embed_cache/
 
 # OS / editor
 .DS_Store
