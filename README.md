@@ -1,59 +1,40 @@
 # Gapless
 
-India-first AI-powered job-search copilot: paste a JD, see skill gaps against your resume, track applications, and (in Version 2) study from your own notes with grounded quizzes and spaced repetition.
+Gapless is a job-search copilot for Indian tech job-seekers (roughly 0–5 years of experience) applying to product companies and startups.
 
-This repository is a **full-stack monorepo**. Application features are not implemented yet. Current work is **architecture governance**: Cursor rules, agent skills, and developer docs.
+Most tools split the work: parse a job description in one place, track applications in another, and study from generic material. Gapless keeps the loop in one product: paste a JD, see how it compares to skills you already have, and track the application.
 
-## Product loop
+## Features
 
-JD → extract skills/seniority → compare to resume/skills → identify gaps → track the application → (V2) study notes as RAG → targeted quizzes → attempts → spaced repetition.
+- **Auth** — email and password via Supabase
+- **JD gap analysis** — paste a job description; the API extracts required skills and diffs them against your skill list
+- **Application tracker** — kanban for `applied`, `interviewing`, `offer`, and `rejected`
 
-**Not in scope:** generic chatbot, generic resume builder, generic AI wrapper, auto-apply, or a pile of unrelated job-search tools.
+## Live demo
 
-## Stack (locked)
+[Add your Vercel URL here](https://YOUR-APP.vercel.app)
+
+## Stack
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js, React, TypeScript, Tailwind CSS |
-| Backend | Python, FastAPI, Pydantic, pytest |
-| Data / auth / files | PostgreSQL + Supabase Auth + Supabase Storage |
-| LLM | LangChain + configurable provider (OpenAI / Groq / OpenRouter / Azure / Ollama) |
-| RAG (V2) | Embedded ChromaDB |
-| Deploy | Vercel + Render or Fly.io + GitHub Actions |
-| Monitoring | Platform logs + Sentry |
+| Frontend | Next.js 14 (App Router), React, TypeScript, Tailwind CSS — Vercel |
+| Backend | FastAPI, Pydantic — Render |
+| Auth & database | Supabase (Auth + Postgres) |
+| LLM | Groq (called only from the backend) |
 
-The browser talks **only** to FastAPI over HTTP. The frontend never opens PostgreSQL, ChromaDB, or LLM providers.
-
-## Repository layout
-
-```text
-.cursor/rules/     persistent constraints
-.cursor/skills/    task workflows (load when doing that work)
-docs/              architecture, scope, env, governance
-frontend/          Next.js 14 App Router
-backend/           FastAPI skeleton (health checks)
-```
-
-## Documentation
-
-| Doc | Purpose |
-|---|---|
-| [docs/product-scope.md](docs/product-scope.md) | MVP vs V2 vs future |
-| [docs/architecture.md](docs/architecture.md) | System design |
-| [docs/environment.md](docs/environment.md) | Env vars and secrets |
-| [docs/using-cursor-governance.md](docs/using-cursor-governance.md) | How to use rules and skills |
-| [docs/assumptions.md](docs/assumptions.md) | Decisions under ambiguity |
-| [docs/product/project-research-report.md](docs/product/project-research-report.md) | Original product research (Gapless is the chosen idea) |
+The browser talks only to the Gapless API. Postgres and Groq credentials stay on the server.
 
 ## Local development
 
-The Next.js UI lives in `frontend/` (`npm install` then `npm run dev`). The FastAPI skeleton lives in `backend/` (`pip install -r requirements.txt` then `uvicorn main:app --reload --port 8000`). See [docs/local-setup.md](docs/local-setup.md).
+See [docs/local-setup.md](docs/local-setup.md). Short version:
 
-## Git
+```bash
+# frontend
+cd frontend && npm install && npm run dev
 
-- `main` is stable. Work on `feature/*`, `fix/*`, `refactor/*`, `docs/*`, `chore/*`.
-- Conventional commits (`feat:`, `fix:`, `docs:`, …).
+# backend
+cd backend && pip install -r requirements.txt && uvicorn main:app --reload --port 8000
+```
 
-## License / status
-
-Private portfolio product. Not production-ready until MVP is implemented, tested, and deployed.
+Copy `backend/.env.example` and `frontend/.env.example` (or `.env.local`) and fill in your own keys. Never commit `.env` files.

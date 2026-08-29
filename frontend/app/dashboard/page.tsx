@@ -52,7 +52,14 @@ export default function DashboardPage() {
 
   return (
     <section className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 md:px-6 md:py-12">
-      <h1 className="font-serif text-3xl text-navy">Dashboard</h1>
+      <div>
+        <h1 className="font-serif text-3xl text-navy">Dashboard</h1>
+        <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+          Start by listing skills you already have, then paste a job description
+          to see the gap. New here? An empty skills list is expected — add a
+          few, then analyze a JD.
+        </p>
+      </div>
       <SkillsCard />
       <JdAnalyzeCard />
     </section>

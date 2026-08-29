@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import {
-  ApiError,
   computeGaps,
   createApplication,
   parseJd,
+  toUserMessage,
   type ComputeGapsResponse,
 } from "@/lib/api";
 
@@ -39,7 +39,12 @@ export function JdAnalyzeCard() {
       setResult(null);
       setSeniority(null);
       setJdId(null);
-      setError(err instanceof ApiError ? err.message : "Could not analyze the job description");
+      setError(
+        toUserMessage(
+          err,
+          "Couldn't analyze this job description, please try again",
+        ),
+      );
     } finally {
       setPending(false);
     }
@@ -55,7 +60,7 @@ export function JdAnalyzeCard() {
       setTrackMessage("Application added to your tracker.");
     } catch (err) {
       setTrackError(
-        err instanceof ApiError ? err.message : "Could not track this application",
+        toUserMessage(err, "Couldn't add this job to your tracker. Please try again."),
       );
     } finally {
       setTracking(false);
@@ -79,7 +84,12 @@ export function JdAnalyzeCard() {
             disabled={pending}
             placeholder="Paste the full job description here"
           />
-          <Button type="submit" className="w-full sm:w-auto" disabled={pending || !rawText.trim()}>
+          <Button
+            type="submit"
+            className="w-full sm:w-auto"
+            disabled={pending || !rawText.trim()}
+            aria-busy={pending}
+          >
             {pending ? "Analyzing…" : "Analyze"}
           </Button>
         </form>
@@ -133,6 +143,7 @@ export function JdAnalyzeCard() {
             type="button"
             className="w-full sm:w-auto"
             disabled={tracking || !jdId}
+            aria-busy={tracking}
             onClick={() => void handleTrack()}
           >
             {tracking ? "Tracking…" : "Track this application"}
