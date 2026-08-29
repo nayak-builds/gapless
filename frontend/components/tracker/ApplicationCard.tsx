@@ -45,6 +45,7 @@ function formatAppliedAt(iso: string): string {
 type ApplicationCardProps = {
   application: Application;
   busy: boolean;
+  busyKind: "status" | "delete" | null;
   onStatusChange: (id: string, status: ApplicationStatus) => void;
   onDelete: (id: string) => void;
 };
@@ -52,6 +53,7 @@ type ApplicationCardProps = {
 export function ApplicationCard({
   application,
   busy,
+  busyKind,
   onStatusChange,
   onDelete,
 }: ApplicationCardProps) {
@@ -67,14 +69,20 @@ export function ApplicationCard({
         Applied {formatAppliedAt(application.applied_at)}
       </p>
       <div className="mt-4 flex flex-col gap-2">
+        {busy ? (
+          <p className="text-sm text-ink-muted" role="status">
+            {busyKind === "delete" ? "Deleting…" : "Updating…"}
+          </p>
+        ) : null}
         <label htmlFor={selectId} className="text-sm font-medium text-ink">
           Status
         </label>
         <select
           id={selectId}
-          className="h-10 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+          className="h-10 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
           value={application.status}
           disabled={busy}
+          aria-busy={busy && busyKind === "status"}
           onChange={(event) =>
             onStatusChange(application.id, event.target.value as ApplicationStatus)
           }
@@ -90,9 +98,10 @@ export function ApplicationCard({
           type="button"
           className="w-full"
           disabled={busy}
+          aria-busy={busy && busyKind === "delete"}
           onClick={() => onDelete(application.id)}
         >
-          Delete
+          {busy && busyKind === "delete" ? "Deleting…" : "Delete"}
         </Button>
       </div>
     </Card>

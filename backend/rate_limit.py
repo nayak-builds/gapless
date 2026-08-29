@@ -19,5 +19,6 @@ def enforce_llm_rate_limit(user_id: str) -> None:
         raise HTTPException(
             status_code=429,
             detail="Too many analyses. Wait a minute and try again.",
+            headers={"Retry-After": "60"},
         )
     bucket.append(now)

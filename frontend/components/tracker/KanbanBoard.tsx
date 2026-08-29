@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { ApplicationCard } from "@/components/tracker/ApplicationCard";
 import { Card } from "@/components/ui/Card";
 import {
-  ApiError,
   deleteApplication,
   listApplications,
   patchApplication,
+  toUserMessage,
   type Application,
   type ApplicationStatus,
 } from "@/lib/api";
@@ -24,6 +24,7 @@ export function KanbanBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyKind, setBusyKind] = useState<"status" | "delete" | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -32,7 +33,7 @@ export function KanbanBoard() {
       setApplications(rows);
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "Could not load applications",
+        toUserMessage(err, "Couldn't load your applications. Please try again."),
       );
     } finally {
       setLoading(false);
@@ -46,6 +47,7 @@ export function KanbanBoard() {
   async function handleStatusChange(id: string, status: ApplicationStatus) {
     const previous = applications;
     setBusyId(id);
+    setBusyKind("status");
     setError(null);
     setApplications((current) =>
       current.map((item) => (item.id === id ? { ...item, status } : item)),
@@ -58,10 +60,11 @@ export function KanbanBoard() {
     } catch (err) {
       setApplications(previous);
       setError(
-        err instanceof ApiError ? err.message : "Could not update application",
+        toUserMessage(err, "Couldn't update this application. Please try again."),
       );
     } finally {
       setBusyId(null);
+      setBusyKind(null);
     }
   }
 
@@ -71,19 +74,19 @@ export function KanbanBoard() {
     );
     if (!confirmed) return;
 
-    const previous = applications;
     setBusyId(id);
+    setBusyKind("delete");
     setError(null);
-    setApplications((current) => current.filter((item) => item.id !== id));
     try {
       await deleteApplication(id);
+      setApplications((current) => current.filter((item) => item.id !== id));
     } catch (err) {
-      setApplications(previous);
       setError(
-        err instanceof ApiError ? err.message : "Could not delete application",
+        toUserMessage(err, "Couldn't delete this application. Please try again."),
       );
     } finally {
       setBusyId(null);
+      setBusyKind(null);
     }
   }
 
@@ -102,7 +105,17 @@ export function KanbanBoard() {
           {error}
         </p>
       ) : null}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      {applications.length === 0 && !error ? (
+        <Card>
+          <h2 className="font-serif text-xl text-navy">No applications yet</h2>
+          <p className="mt-2 max-w-prose text-sm text-ink-muted">
+            Your tracker is empty — that&apos;s normal for a new account. Analyze
+            a job description on the dashboard, then choose{" "}
+            <span className="text-ink">Track this application</span>.
+          </p>
+        </Card>
+      ) : applications.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {COLUMNS.map((column) => {
           const cards = applications.filter(
             (item) => item.status === column.status,
@@ -124,6 +137,7 @@ export function KanbanBoard() {
                       key={item.id}
                       application={item}
                       busy={busyId === item.id}
+                      busyKind={busyId === item.id ? busyKind : null}
                       onStatusChange={handleStatusChange}
                       onDelete={handleDelete}
                     />
@@ -133,7 +147,8 @@ export function KanbanBoard() {
             </section>
           );
         })}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

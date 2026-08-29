@@ -30,16 +30,57 @@ async function authHeader(): Promise<string> {
   return `Bearer ${token}`;
 }
 
+function messageFromPayload(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+  const record = payload as { error?: unknown; detail?: unknown };
+  if (typeof record.error === "string" && record.error.trim()) {
+    return record.error;
+  }
+  if (typeof record.detail === "string" && record.detail.trim()) {
+    return record.detail;
+  }
+  return fallback;
+}
+
+export function toUserMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.status === 429) {
+      return err.message || "Too many requests. Wait a minute and try again.";
+    }
+    if (err.status === 401) {
+      return "You are not signed in. Refresh the page and sign in again.";
+    }
+    if (err.status === 0) {
+      return err.message || fallback;
+    }
+    if (err.status >= 500) {
+      return fallback;
+    }
+    return err.message || fallback;
+  }
+  return fallback;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBase()}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      Authorization: await authHeader(),
-      ...init?.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase()}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        Authorization: await authHeader(),
+        ...init?.headers,
+      },
+    });
+  } catch {
+    throw new ApiError(
+      "Couldn't reach the server. Check your connection and try again.",
+      0,
+    );
+  }
 
   let payload: unknown = null;
   const text = await response.text();
@@ -52,14 +93,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    const message =
-      payload &&
-      typeof payload === "object" &&
-      "error" in payload &&
-      typeof (payload as { error: unknown }).error === "string"
-        ? (payload as { error: string }).error
-        : "Request failed";
-    throw new ApiError(message, response.status);
+    throw new ApiError(
+      messageFromPayload(payload, "Request failed"),
+      response.status,
+    );
   }
 
   return payload as T;

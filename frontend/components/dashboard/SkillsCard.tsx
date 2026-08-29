@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { ApiError, getOwnedSkills, saveOwnedSkills } from "@/lib/api";
+import { getOwnedSkills, saveOwnedSkills, toUserMessage } from "@/lib/api";
 
 export function SkillsCard() {
   const [skills, setSkills] = useState<string[]>([]);
@@ -24,7 +24,9 @@ export function SkillsCard() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Could not load skills");
+          setError(
+            toUserMessage(err, "Couldn't load your skills. Please try again."),
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -36,14 +38,18 @@ export function SkillsCard() {
     };
   }, []);
 
-  async function persist(next: string[]) {
+  async function persist(next: string[]): Promise<boolean> {
     setSaving(true);
     setError(null);
     try {
       const saved = await saveOwnedSkills(next);
       setSkills(saved);
+      return true;
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not save skills");
+      setError(
+        toUserMessage(err, "Couldn't save your skills. Please try again."),
+      );
+      return false;
     } finally {
       setSaving(false);
     }
@@ -59,7 +65,10 @@ export function SkillsCard() {
       return;
     }
     setDraft("");
-    await persist([...skills, name]);
+    const ok = await persist([...skills, name]);
+    if (!ok) {
+      setDraft(name);
+    }
   }
 
   async function handleRemove(name: string) {
@@ -78,7 +87,11 @@ export function SkillsCard() {
         <>
           <ul className="mt-6 flex flex-wrap gap-2">
             {skills.length === 0 ? (
-              <li className="text-sm text-ink-muted">No skills yet.</li>
+              <li className="max-w-prose text-sm text-ink-muted">
+                You haven&apos;t added any skills yet. Add a few you already
+                know — we&apos;ll match them against job descriptions you paste
+                below.
+              </li>
             ) : (
               skills.map((name) => (
                 <li
@@ -91,6 +104,7 @@ export function SkillsCard() {
                     className="text-ink-muted hover:text-ink"
                     onClick={() => void handleRemove(name)}
                     disabled={saving}
+                    aria-busy={saving}
                     aria-label={`Remove ${name}`}
                   >
                     ×
@@ -111,7 +125,12 @@ export function SkillsCard() {
                 disabled={saving}
               />
             </div>
-            <Button type="submit" className="w-full sm:w-auto" disabled={saving || !draft.trim()}>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={saving || !draft.trim()}
+              aria-busy={saving}
+            >
               {saving ? "Saving…" : "Add"}
             </Button>
           </form>
