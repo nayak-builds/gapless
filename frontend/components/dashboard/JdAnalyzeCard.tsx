@@ -11,6 +11,7 @@ import {
   toUserMessage,
   type ComputeGapsResponse,
 } from "@/lib/api";
+import { QuizModal } from "@/components/dashboard/QuizModal";
 
 export function JdAnalyzeCard() {
   const [rawText, setRawText] = useState("");
@@ -22,6 +23,9 @@ export function JdAnalyzeCard() {
   const [tracking, setTracking] = useState(false);
   const [trackMessage, setTrackMessage] = useState<string | null>(null);
   const [trackError, setTrackError] = useState<string | null>(null);
+  const [quizGap, setQuizGap] = useState<{ id: string; name: string } | null>(
+    null,
+  );
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,13 +129,26 @@ export function JdAnalyzeCard() {
             {result.missing.length === 0 ? (
               <p className="mt-4 text-sm text-ink-muted">No missing skills detected.</p>
             ) : (
-              <ul className="mt-4 flex flex-col gap-2">
+              <ul className="mt-4 flex flex-col gap-3">
                 {result.missing.map((item) => (
-                  <li key={item.name} className="text-sm text-ink">
-                    {item.name}
-                    {item.gap_level && item.gap_level !== "none" ? (
-                      <span className="ml-2 text-ink-muted">({item.gap_level})</span>
-                    ) : null}
+                  <li
+                    key={item.id}
+                    className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="min-w-0 break-words text-sm text-ink">
+                      {item.name}
+                      {item.gap_level && item.gap_level !== "none" ? (
+                        <span className="ml-2 text-ink-muted">({item.gap_level})</span>
+                      ) : null}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full shrink-0 sm:w-auto"
+                      onClick={() => setQuizGap({ id: item.id, name: item.name })}
+                    >
+                      Quiz me
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -160,6 +177,14 @@ export function JdAnalyzeCard() {
           ) : null}
         </div>
       </>
+      ) : null}
+
+      {quizGap ? (
+        <QuizModal
+          gapId={quizGap.id}
+          skillName={quizGap.name}
+          onClose={() => setQuizGap(null)}
+        />
       ) : null}
     </div>
   );

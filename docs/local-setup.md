@@ -52,6 +52,6 @@ If uvicorn used to crash with `TimeoutError` in `asyncpg` during startup, set `S
 
 CORS allows origins from `FRONTEND_URL` (default `http://localhost:3000` if unset). Dashboard skills and JD analyze call this API with the Supabase access token. Set `GROQ_API_KEY` in `backend/.env` for `/jd/parse`.
 
-Notes ingest (`POST /notes`) needs `chromadb` 1.x (see `requirements.txt`; 0.5.x often fails to install on Windows without C++ build tools). Apply `backend/migrations/002_notes_embeddings.sql` in the Supabase SQL Editor before using `/notes`. Chroma data is written under `CHROMA_PATH` (default `backend/chroma_data`). The first upload downloads the MiniLM ONNX model (~80 MB) into the Chroma cache.
+Notes ingest (`POST /notes`) needs `chromadb` 1.x (see `requirements.txt`; 0.5.x often fails to install on Windows without C++ build tools). Apply `backend/migrations/002_notes_embeddings.sql` then `backend/migrations/003_quiz_attempts.sql` in the Supabase SQL Editor before using `/notes` and `/quiz/*`. Chroma data is written under `CHROMA_PATH` (default `backend/chroma_data`). The first upload downloads the MiniLM ONNX model (~80 MB) into the Chroma cache.
 
 Never use production service-role keys on a laptop.

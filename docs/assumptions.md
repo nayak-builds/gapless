@@ -14,7 +14,7 @@ Decisions made where docs were missing or conflicting. Change these only with an
 - **Next.js App Router** (not Pages Router).
 - **Python 3.12** and **Node 20 LTS** when tooling is added.
 - **Alembic** for migrations when the backend is scaffolded.
-- **SM-2** for spaced repetition (V2).
+- **SM-2** for spaced repetition (V2) is the long-term algorithm. **Quiz submit (this slice)** uses simple score buckets for `next_review_at`: below 60% → +1 day, 60–89% → +3 days, 90%+ → +7 days (UTC).
 - **`POST /auth/login`** means verify/bootstrap using **Supabase** tokens (or document a BFF exchange). It is not a custom password table.
 
 ## RAG starting parameters (V2, unevaluated)
@@ -25,9 +25,9 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 |---|---|
 | Chunking | Paragraph / line breaks first, then a **800-character** window (~200 tokens at 4 chars/token) with 100-character overlap. A ~2300-character note is multiple chunks even as one paragraph |
 | Embedding model | Chroma `DefaultEmbeddingFunction` (ONNX MiniLM). No extra embedding API key |
-| Similarity | Cosine (Chroma default) |
-| top-k | 5 (retrieval not wired yet) |
-| Similarity threshold | Conservative; reject quiz generation below threshold (exact number chosen when quizzes ship) |
+| Similarity | Cosine similarity via Chroma default embeddings; query returns L2 `distance` on the default collection |
+| top-k | **3** for quiz generation (`POST /quiz/generate`) |
+| Similarity threshold | Keep chunks with Chroma `distance <= 1.15`. If none remain, return 422 and skip Groq |
 | Retrieval | Dense only; per-user Chroma collection `u_{user_id without hyphens}` plus `user_id` metadata |
 | Notes formats | PDF, Markdown, plain text |
 | Persist path | `CHROMA_PATH` (default `backend/chroma_data`). Render free disk is ephemeral |
