@@ -48,6 +48,10 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 - [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health) — process is up (no database)
 - [http://127.0.0.1:8000/health/db](http://127.0.0.1:8000/health/db) — `SELECT 1` against Supabase Postgres
 
+If uvicorn used to crash with `TimeoutError` in `asyncpg` during startup, set `SUPABASE_DB_CONNECTION_STRING` to the **Session pooler** URI (port **6543**, host like `aws-0-….pooler.supabase.com`), not the direct `db.<project>.supabase.co:5432` URL. Windows often cannot complete the direct connection before the timeout.
+
 CORS allows origins from `FRONTEND_URL` (default `http://localhost:3000` if unset). Dashboard skills and JD analyze call this API with the Supabase access token. Set `GROQ_API_KEY` in `backend/.env` for `/jd/parse`.
+
+Notes ingest (`POST /notes`) needs `chromadb` 1.x (see `requirements.txt`; 0.5.x often fails to install on Windows without C++ build tools). Apply `backend/migrations/002_notes_embeddings.sql` in the Supabase SQL Editor before using `/notes`. Chroma data is written under `CHROMA_PATH` (default `backend/chroma_data`). The first upload downloads the MiniLM ONNX model (~80 MB) into the Chroma cache.
 
 Never use production service-role keys on a laptop.

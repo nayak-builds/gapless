@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from config import get_settings
 from db import close_pool, get_pool, init_pool
 from errors import register_error_handlers
-from routers import applications, gaps, jd, skills
+from routers import applications, gaps, jd, notes, skills
 
 settings = get_settings()
 
@@ -35,6 +35,7 @@ app.include_router(skills.router)
 app.include_router(jd.router)
 app.include_router(gaps.router)
 app.include_router(applications.router)
+app.include_router(notes.router)
 
 
 class HealthResponse(BaseModel):
@@ -70,7 +71,12 @@ async def health_db() -> JSONResponse:
             content={
                 "status": "error",
                 "db": "disconnected",
-                "message": "Database pool is not initialized.",
+                "message": (
+                    "Database pool is not initialized. "
+                    "Check SUPABASE_DB_CONNECTION_STRING. On Windows, use the "
+                    "Session pooler URI from Supabase (host contains pooler, port 6543) "
+                    "instead of db.<project>.supabase.co:5432 if connect times out."
+                ),
             },
         )
 

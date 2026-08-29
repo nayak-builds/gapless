@@ -18,7 +18,10 @@ class Settings(BaseModel):
     groq_model: str = Field(default="openai/gpt-oss-20b")
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     max_jd_chars: int = Field(default=12000)
+    max_note_chars: int = Field(default=100000)
     llm_rate_limit_per_minute: int = Field(default=10)
+    notes_rate_limit_per_minute: int = Field(default=10)
+    chroma_path: str = Field(default="")
 
 
 def parse_cors_origins() -> list[str]:
@@ -43,5 +46,9 @@ def get_settings() -> Settings:
         groq_model=os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"),
         cors_origins=parse_cors_origins(),
         max_jd_chars=int(os.getenv("MAX_JD_CHARS", "12000")),
+        max_note_chars=int(os.getenv("MAX_NOTE_CHARS", "100000")),
         llm_rate_limit_per_minute=int(os.getenv("LLM_RATE_LIMIT_PER_MINUTE", "10")),
+        notes_rate_limit_per_minute=int(os.getenv("NOTES_RATE_LIMIT_PER_MINUTE", "10")),
+        chroma_path=os.getenv("CHROMA_PATH", "").strip()
+        or str(_BACKEND_DIR / "chroma_data"),
     )

@@ -1,3 +1,3 @@
-from . import applications, gaps, jd, skills
+from . import applications, gaps, jd, notes, skills
 
-__all__ = ["applications", "gaps", "jd", "skills"]
+__all__ = ["applications", "gaps", "jd", "notes", "skills"]

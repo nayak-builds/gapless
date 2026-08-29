@@ -23,13 +23,14 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 
 | Parameter | Initial value |
 |---|---|
-| Chunking | Fixed size, ~800 characters, 100 overlap |
-| Embedding model | Set via `EMBEDDING_MODEL` (one place) |
-| Similarity | Cosine |
-| top-k | 5 |
-| Similarity threshold | Conservative; reject quiz generation below threshold (exact number chosen at implementation and recorded here) |
-| Retrieval | Dense only; user_id metadata filter |
-| Notes formats | PDF, Markdown |
+| Chunking | Paragraph / line breaks first, then a **800-character** window (~200 tokens at 4 chars/token) with 100-character overlap. A ~2300-character note is multiple chunks even as one paragraph |
+| Embedding model | Chroma `DefaultEmbeddingFunction` (ONNX MiniLM). No extra embedding API key |
+| Similarity | Cosine (Chroma default) |
+| top-k | 5 (retrieval not wired yet) |
+| Similarity threshold | Conservative; reject quiz generation below threshold (exact number chosen when quizzes ship) |
+| Retrieval | Dense only; per-user Chroma collection `u_{user_id without hyphens}` plus `user_id` metadata |
+| Notes formats | PDF, Markdown, plain text |
+| Persist path | `CHROMA_PATH` (default `backend/chroma_data`). Render free disk is ephemeral |
 
 ## Gap matching
 

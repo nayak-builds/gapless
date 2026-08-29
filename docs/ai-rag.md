@@ -14,9 +14,9 @@ Untrusted JD text → structured JSON → Pydantic. Handle empty, huge, noisy, d
 
 Required vs owned. Categories: matched, missing, partial (if supported), importance/severity. Embeddings parameters and thresholds belong in [assumptions.md](assumptions.md) when enabled.
 
-## RAG (Version 2 only)
+## RAG (Version 2)
 
-Notes (PDF/Markdown) → chunk → embed → ChromaDB → retrieve for a **skill gap** → grounded quiz. User notes are the source of truth; the LLM is not.
+Ingest (implemented): notes (PDF / Markdown / paste) → chunk → embed (Chroma default MiniLM) → per-user collection. Retrieval for a **skill gap** and grounded quizzes are not implemented yet.
 
 Do not add hybrid search, rerankers, or hosted vector DBs until evaluation says the simple pipeline fails.
 

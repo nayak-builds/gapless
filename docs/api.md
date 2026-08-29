@@ -16,7 +16,10 @@ Use Pydantic request/response models, never raw ORM. Authenticated routes requir
 | POST | `/applications` | MVP | Body `{ "jd_id": "<uuid>" }`. Creates a row with `status` `applied`. 404 if JD missing, 403 if another user's JD. Idempotent: if the caller already tracked that JD, returns the existing row |
 | PATCH | `/applications/{id}` | MVP | Body `{ "status": "applied" \| "interviewing" \| "offer" \| "rejected" }`. 404 if missing or not owned. Returns the updated application |
 | DELETE | `/applications/{id}` | MVP | Deletes the caller's application. 404 if missing or not owned. Returns `{ "id": "<uuid>" }` |
-| POST | `/quiz/generate` | V2 | Grounded in retrieved notes |
+| POST | `/notes` | V2 ingest | Multipart: `title` plus `content` and/or `file` (PDF / Markdown / txt). Rate-limited. Chunks ~500–800 tokens, embeds with Chroma default MiniLM, stores vectors in a per-user collection. Returns `{ "id", "title", "created_at", "chunk_count" }` |
+| GET | `/notes` | V2 ingest | Caller's notes: `{ "notes": [{ "id", "title", "created_at", "chunk_count" }] }` — no full content |
+| DELETE | `/notes/{id}` | V2 ingest | Deletes Chroma vectors for the note, then Postgres `notes` (CASCADE `embeddings`). 404 if missing or not owned. Returns `{ "id": "<uuid>" }` |
+| POST | `/quiz/generate` | V2 | Grounded in retrieved notes — not implemented |
 | POST | `/quiz/{id}/submit` | V2 | Server-side scoring |
 
 ## Errors

@@ -33,7 +33,9 @@ Do not copy production values into `.env.local`.
 
 **LLM:** `GROQ_API_KEY`, `GROQ_MODEL` (backend only)
 
-**Limits:** `MAX_JD_CHARS`, `LLM_RATE_LIMIT_PER_MINUTE`
+**Limits:** `MAX_JD_CHARS`, `MAX_NOTE_CHARS`, `LLM_RATE_LIMIT_PER_MINUTE`, `NOTES_RATE_LIMIT_PER_MINUTE`
+
+**Chroma (V2 ingest):** `CHROMA_PATH` (backend local persist dir; default `backend/chroma_data`)
 
 Frontend must not receive service-role or LLM keys. See `backend/.env.example` and `frontend/.env.example`.
 
@@ -52,7 +54,10 @@ Copy **production** values here. Do not reuse local/dev project secrets if you h
 | `GROQ_API_KEY` | Production Groq key |
 | `GROQ_MODEL` | Optional; default in code is `openai/gpt-oss-20b` |
 | `MAX_JD_CHARS` | Optional; default `12000` |
+| `MAX_NOTE_CHARS` | Optional; default `100000` |
 | `LLM_RATE_LIMIT_PER_MINUTE` | Optional; default `10` |
+| `NOTES_RATE_LIMIT_PER_MINUTE` | Optional; default `10` |
+| `CHROMA_PATH` | Optional; Chroma persist directory on the API host |
 
 Also on Render: start command in the `backend` directory, e.g. `uvicorn main:app --host 0.0.0.0 --port $PORT`.
 
