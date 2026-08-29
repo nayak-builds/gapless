@@ -34,11 +34,15 @@ export function GetStartedButton() {
 
   if (!href) {
     return (
-      <Button type="button" disabled>
+      <Button type="button" className="w-full sm:w-auto" disabled>
         Get Started
       </Button>
     );
   }
 
-  return <Button href={href}>Get Started</Button>;
+  return (
+    <Button className="w-full sm:w-auto" href={href}>
+      Get Started
+    </Button>
+  );
 }

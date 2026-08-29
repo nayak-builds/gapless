@@ -59,10 +59,10 @@ export function ApplicationCard({
 
   return (
     <Card>
-      <h3 className="font-serif text-lg text-navy">
+      <h3 className="break-words font-serif text-lg text-navy">
         {displayCompany(application.company)}
       </h3>
-      <p className="mt-1 text-sm text-ink">{displayRole(application.role_title)}</p>
+      <p className="mt-1 break-words text-sm text-ink">{displayRole(application.role_title)}</p>
       <p className="mt-2 text-sm text-ink-muted">
         Applied {formatAppliedAt(application.applied_at)}
       </p>
@@ -88,6 +88,7 @@ export function ApplicationCard({
         <Button
           variant="danger"
           type="button"
+          className="w-full"
           disabled={busy}
           onClick={() => onDelete(application.id)}
         >
