@@ -12,7 +12,9 @@ export class ApiError extends Error {
 
 function apiBase(): string {
   const base =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    "http://localhost:8000";
   return base.replace(/\/$/, "");
 }
 

@@ -16,9 +16,21 @@ class Settings(BaseModel):
     supabase_service_role_key: str = Field(default="")
     groq_api_key: str = Field(default="")
     groq_model: str = Field(default="openai/gpt-oss-20b")
-    cors_origin: str = Field(default="http://localhost:3000")
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     max_jd_chars: int = Field(default=12000)
     llm_rate_limit_per_minute: int = Field(default=10)
+
+
+def parse_cors_origins() -> list[str]:
+    raw = (
+        os.getenv("FRONTEND_URL")
+        or os.getenv("CORS_ORIGINS")
+        or os.getenv("CORS_ORIGIN")
+        or os.getenv("FRONTEND_ORIGIN")
+        or "http://localhost:3000"
+    )
+    origins = [part.strip().rstrip("/") for part in raw.split(",") if part.strip()]
+    return origins or ["http://localhost:3000"]
 
 
 @lru_cache
@@ -29,7 +41,7 @@ def get_settings() -> Settings:
         supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
         groq_api_key=os.getenv("GROQ_API_KEY", ""),
         groq_model=os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"),
-        cors_origin=os.getenv("CORS_ORIGIN", "http://localhost:3000"),
+        cors_origins=parse_cors_origins(),
         max_jd_chars=int(os.getenv("MAX_JD_CHARS", "12000")),
         llm_rate_limit_per_minute=int(os.getenv("LLM_RATE_LIMIT_PER_MINUTE", "10")),
     )

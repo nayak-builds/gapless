@@ -18,10 +18,10 @@ Do not introduce Kubernetes, Terraform, ECS, Kafka, Elasticsearch, or Redis unle
 ## Checklist when platforms are connected
 
 - [ ] Separate preview and production secrets
-- [ ] CORS origins = real frontend URLs
+- [ ] CORS origins = real frontend URLs (`FRONTEND_URL` on Render)
 - [ ] Backend health endpoint
 - [ ] Migrations run before/at deploy
-- [ ] No LLM keys on Vercel frontend env
-- [ ] Sentry DSNs set per environment
+- [ ] No LLM keys or service-role on Vercel frontend env
+- [ ] `NEXT_PUBLIC_API_URL` on Vercel points at the live Render URL
 
-Troubleshooting: wrong `ENVIRONMENT`, preview pointing at production Supabase, missing `CORS_ORIGINS`, failed migration, 401 from unverified JWT issuer.
+Troubleshooting: preview pointing at production Supabase, missing `FRONTEND_URL`, failed migration, 401 from unverified JWT issuer.
