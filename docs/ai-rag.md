@@ -1,6 +1,6 @@
 # AI and RAG
 
-Status: **planned**. Do not treat this as implemented behavior.
+Status: ingest and **quiz generate/submit** are implemented. Do not treat analytics or full SM-2 as implemented.
 
 ## Providers
 
@@ -16,14 +16,14 @@ Required vs owned. Categories: matched, missing, partial (if supported), importa
 
 ## RAG (Version 2)
 
-Ingest (implemented): notes (PDF / Markdown / paste) → chunk → embed (Chroma default MiniLM) → per-user collection. Retrieval for a **skill gap** and grounded quizzes are not implemented yet.
+Ingest (implemented): notes (PDF / Markdown / paste) → chunk → embed (Chroma default MiniLM) → per-user collection. Retrieval: query that collection with the gap `skill_name`, keep top 3 chunks with L2 distance ≤ 1.15.
 
 Do not add hybrid search, rerankers, or hosted vector DBs until evaluation says the simple pipeline fails.
 
 ## Quizzes (V2)
 
-Structured questions, validated options and correct indexes, source chunk ids, reject on weak retrieval. Score on the server.
+`POST /quiz/generate` then `POST /quiz/submit`. Structured MCQs (3–5, four options, `correct_index`), Pydantic-validated, sourced from retrieved chunks only. Weak/empty retrieval returns 422 without calling Groq. Score on the server. Attempts stored in `quiz_attempts`.
 
 ## Spaced repetition (V2)
 
-SM-2 (or another named algorithm), UTC `next_review_at`, indexed due queries per user. See the `spaced-repetition` skill.
+Submit uses UTC `next_review_at` buckets (1 / 3 / 7 days from percent). Indexed `(user_id, next_review_at)`. Full SM-2 is not wired yet.

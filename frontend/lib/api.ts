@@ -117,6 +117,7 @@ export type ParseJdResponse = {
 };
 
 export type GapSkill = {
+  id: string;
   name: string;
   gap_level: string;
 };
@@ -228,5 +229,56 @@ export async function createNote(
 export async function deleteNote(id: string): Promise<{ id: string }> {
   return request<{ id: string }>(`/notes/${id}`, {
     method: "DELETE",
+  });
+}
+
+export type QuizQuestion = {
+  prompt: string;
+  options: string[];
+  correct_index: number;
+  explanation: string;
+};
+
+export type GenerateQuizResponse = {
+  gap_id: string;
+  skill_name: string;
+  questions: QuizQuestion[];
+};
+
+export type QuizQuestionResult = {
+  selected_index: number;
+  correct_index: number;
+  is_correct: boolean;
+  explanation: string;
+};
+
+export type SubmitQuizResponse = {
+  id: string;
+  score: number;
+  total: number;
+  percent: number;
+  next_review_at: string;
+  results: QuizQuestionResult[];
+};
+
+export async function generateQuiz(gapId: string): Promise<GenerateQuizResponse> {
+  return request<GenerateQuizResponse>("/quiz/generate", {
+    method: "POST",
+    body: JSON.stringify({ gap_id: gapId }),
+  });
+}
+
+export async function submitQuiz(
+  gapId: string,
+  questions: QuizQuestion[],
+  answers: number[],
+): Promise<SubmitQuizResponse> {
+  return request<SubmitQuizResponse>("/quiz/submit", {
+    method: "POST",
+    body: JSON.stringify({
+      gap_id: gapId,
+      questions,
+      answers,
+    }),
   });
 }

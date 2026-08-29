@@ -54,6 +54,48 @@ def add_chunks(
     )
 
 
+QUIZ_TOP_K = 3
+QUIZ_MAX_DISTANCE = 1.15
+_MAX_CHUNK_CHARS = 2000
+
+
+def query_skill_chunks(user_id: str, skill_name: str, n: int = QUIZ_TOP_K) -> list[str]:
+    try:
+        collection = get_client().get_collection(name=collection_name(user_id))
+    except Exception:
+        return []
+    try:
+        count = collection.count()
+    except Exception:
+        return []
+    if count < 1:
+        return []
+
+    n_results = min(max(n, 1), count)
+    try:
+        result = collection.query(
+            query_texts=[skill_name],
+            n_results=n_results,
+            include=["documents", "distances"],
+        )
+    except Exception:
+        return []
+
+    documents = (result.get("documents") or [[]])[0] or []
+    distances = (result.get("distances") or [[]])[0] or []
+    chunks: list[str] = []
+    for doc, distance in zip(documents, distances):
+        if not doc or not str(doc).strip():
+            continue
+        if distance is None or float(distance) > QUIZ_MAX_DISTANCE:
+            continue
+        text = str(doc).strip()
+        if len(text) > _MAX_CHUNK_CHARS:
+            text = text[:_MAX_CHUNK_CHARS]
+        chunks.append(text)
+    return chunks
+
+
 def delete_note_vectors(user_id: str, note_id: UUID, embedding_ids: list[UUID]) -> None:
     try:
         collection = get_client().get_collection(name=collection_name(user_id))

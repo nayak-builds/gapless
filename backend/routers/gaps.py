@@ -49,8 +49,7 @@ async def compute_gaps(
             if row["skill_name"]
         ]
 
-        matched: list[GapSkillOut] = []
-        missing: list[GapSkillOut] = []
+        pending: list[tuple[str, str, bool]] = []
         seen: set[str] = set()
         for row in required:
             name = " ".join((row["skill_name"] or "").split())
@@ -61,11 +60,13 @@ async def compute_gaps(
                 continue
             seen.add(key)
             if any(skills_match(name, owned) for owned in owned_names):
-                matched.append(GapSkillOut(name=name, gap_level="none"))
+                pending.append((name, "none", True))
             else:
                 importance = row["importance"] or "required"
-                missing.append(GapSkillOut(name=name, gap_level=importance))
+                pending.append((name, importance, False))
 
+        matched: list[GapSkillOut] = []
+        missing: list[GapSkillOut] = []
         async with conn.transaction():
             await conn.execute(
                 """
@@ -75,16 +76,22 @@ async def compute_gaps(
                 user_id,
                 body.jd_id,
             )
-            for item in matched + missing:
-                await conn.execute(
+            for name, gap_level, is_matched in pending:
+                gap_id = await conn.fetchval(
                     """
                     insert into public.gaps (user_id, jd_id, skill_name, gap_level)
                     values ($1::uuid, $2, $3, $4)
+                    returning id
                     """,
                     user_id,
                     body.jd_id,
-                    item.name,
-                    item.gap_level,
+                    name,
+                    gap_level,
                 )
+                skill = GapSkillOut(id=gap_id, name=name, gap_level=gap_level)
+                if is_matched:
+                    matched.append(skill)
+                else:
+                    missing.append(skill)
 
     return ComputeGapsResponse(matched=matched, missing=missing)

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from config import get_settings
 from db import close_pool, get_pool, init_pool
 from errors import register_error_handlers
-from routers import applications, gaps, jd, notes, skills
+from routers import applications, gaps, jd, notes, quiz, skills
 
 settings = get_settings()
 
@@ -36,6 +36,7 @@ app.include_router(jd.router)
 app.include_router(gaps.router)
 app.include_router(applications.router)
 app.include_router(notes.router)
+app.include_router(quiz.router)
 
 
 class HealthResponse(BaseModel):
