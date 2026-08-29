@@ -59,19 +59,22 @@ export function SiteHeader() {
 
   return (
     <header className="border-b border-line bg-surface">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
+      <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 md:px-6">
         <Link
           href="/"
-          className="font-serif text-xl text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="shrink-0 font-serif text-xl text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Gapless
         </Link>
 
-        <nav className="flex items-center gap-2 sm:gap-4" aria-label="Primary">
+        <nav
+          className="flex min-w-0 flex-wrap items-center justify-end gap-1 sm:gap-2 md:gap-4"
+          aria-label="Primary"
+        >
           <Link
             href="/dashboard"
             className={cn(
-              "px-3 text-sm font-medium",
+              "px-2 text-sm font-medium sm:px-3",
               onDashboard ? "text-accent" : "text-ink-muted hover:text-ink",
             )}
           >
@@ -80,7 +83,7 @@ export function SiteHeader() {
           <Link
             href="/tracker"
             className={cn(
-              "px-3 text-sm font-medium",
+              "px-2 text-sm font-medium sm:px-3",
               onTracker ? "text-accent" : "text-ink-muted hover:text-ink",
             )}
           >
@@ -88,7 +91,7 @@ export function SiteHeader() {
           </Link>
           {email ? (
             <>
-              <span className="hidden text-sm text-ink-muted sm:inline">
+              <span className="hidden max-w-48 truncate text-sm text-ink-muted md:inline lg:max-w-xs">
                 {email}
               </span>
               <Button

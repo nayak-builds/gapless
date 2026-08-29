@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     "Paste a job description, see your real skill gap, and study exactly what's missing.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,7 +38,7 @@ export default function RootLayout({
         className={`${inter.variable} ${sourceSerif.variable} flex min-h-screen flex-col bg-canvas font-sans text-ink antialiased`}
       >
         <SiteHeader />
-        <main className="flex-1">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
         <SiteFooter />
       </body>
     </html>

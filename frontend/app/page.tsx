@@ -3,7 +3,7 @@ import { GetStartedButton } from "@/components/home/GetStartedButton";
 export default function HomePage() {
   return (
     <section className="mx-auto flex max-w-6xl flex-col items-start px-4 py-16 md:items-center md:px-6 md:text-center">
-      <h1 className="max-w-3xl font-serif text-4xl leading-tight text-navy md:text-5xl">
+      <h1 className="max-w-3xl font-serif text-3xl leading-tight text-navy sm:text-4xl md:text-5xl">
         Paste a job description, see your real skill gap, and study exactly
         what&apos;s missing.
       </h1>

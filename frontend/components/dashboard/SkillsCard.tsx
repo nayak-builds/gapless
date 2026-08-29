@@ -83,9 +83,9 @@ export function SkillsCard() {
               skills.map((name) => (
                 <li
                   key={name}
-                  className="inline-flex items-center gap-2 rounded-md border border-line bg-canvas px-3 py-1 text-sm text-ink"
+                  className="inline-flex max-w-full items-center gap-2 rounded-md border border-line bg-canvas px-3 py-1 text-sm text-ink"
                 >
-                  {name}
+                  <span className="min-w-0 break-words">{name}</span>
                   <button
                     type="button"
                     className="text-ink-muted hover:text-ink"
@@ -111,7 +111,7 @@ export function SkillsCard() {
                 disabled={saving}
               />
             </div>
-            <Button type="submit" disabled={saving || !draft.trim()}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={saving || !draft.trim()}>
               {saving ? "Saving…" : "Add"}
             </Button>
           </form>

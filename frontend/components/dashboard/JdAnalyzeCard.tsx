@@ -79,7 +79,7 @@ export function JdAnalyzeCard() {
             disabled={pending}
             placeholder="Paste the full job description here"
           />
-          <Button type="submit" disabled={pending || !rawText.trim()}>
+          <Button type="submit" className="w-full sm:w-auto" disabled={pending || !rawText.trim()}>
             {pending ? "Analyzing…" : "Analyze"}
           </Button>
         </form>
@@ -92,7 +92,7 @@ export function JdAnalyzeCard() {
 
       {result ? (
         <>
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <Card>
             <h3 className="font-serif text-xl text-navy">Skills you have</h3>
             {seniority ? (
@@ -128,9 +128,10 @@ export function JdAnalyzeCard() {
             )}
           </Card>
         </div>
-        <div className="flex flex-col items-start gap-2">
+        <div className="flex w-full flex-col items-stretch gap-2 sm:items-start">
           <Button
             type="button"
+            className="w-full sm:w-auto"
             disabled={tracking || !jdId}
             onClick={() => void handleTrack()}
           >
