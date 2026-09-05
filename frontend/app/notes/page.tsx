@@ -54,8 +54,8 @@ export default function NotesPage() {
       <div>
         <h1 className="font-serif text-3xl text-navy">Notes</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Store study notes as chunks and embeddings. Quizzes use these notes
-          against missing skills from a job description.
+          Study material for Quiz me on the dashboard — not generic internet
+          quizzes.
         </p>
       </div>
       <NotesPanel />

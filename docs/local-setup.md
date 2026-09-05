@@ -54,4 +54,6 @@ CORS allows origins from `FRONTEND_URL` (default `http://localhost:3000` if unse
 
 Notes ingest (`POST /notes`) uses local ONNX MiniLM (`onnxruntime`) and stores vectors in Postgres (`pgvector`). Apply `backend/migrations/002_notes_embeddings.sql`, `003_quiz_attempts.sql`, then `004_pgvector_embeddings.sql` in the Supabase SQL Editor before using `/notes` and `/quiz/*`. The first embed may download the MiniLM ONNX model (~80 MB) into `EMBED_CACHE` (default `backend/embed_cache`; gitignored; ephemeral on Render). Re-upload notes after 004 so `embedding` is populated.
 
+Interview prep (`POST /interview-prep/generate`, `GET /interview-prep/{jd_id}`) stores JSON question lists in `interview_question_sets`. Apply `backend/migrations/005_interview_question_sets.sql` in the Supabase SQL Editor before using those routes.
+
 Never use production service-role keys on a laptop.

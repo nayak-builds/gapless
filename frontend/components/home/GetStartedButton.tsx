@@ -35,14 +35,14 @@ export function GetStartedButton() {
   if (!href) {
     return (
       <Button type="button" className="w-full sm:w-auto" disabled>
-        Get Started
+        See your skill gap
       </Button>
     );
   }
 
   return (
     <Button className="w-full sm:w-auto" href={href}>
-      Get Started
+      See your skill gap
     </Button>
   );
 }

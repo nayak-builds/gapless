@@ -15,6 +15,14 @@ class OwnedSkillsResponse(BaseModel):
     skills: list[str]
 
 
+class ResumeSkillOut(BaseModel):
+    name: str
+
+
+class ParseResumeResponse(BaseModel):
+    skills: list[ResumeSkillOut]
+
+
 class ParseJdBody(BaseModel):
     raw_text: str = Field(min_length=1)
 
@@ -138,3 +146,27 @@ class SubmitQuizResponse(BaseModel):
     percent: int
     next_review_at: datetime
     results: list[QuizQuestionResult]
+
+
+InterviewDifficulty = Literal["easy", "medium", "hard"]
+
+
+class InterviewQuestion(BaseModel):
+    skill: str = Field(min_length=1, max_length=80)
+    difficulty: InterviewDifficulty
+    question: str = Field(min_length=1, max_length=800)
+
+
+class InterviewPrepPayload(BaseModel):
+    confident_questions: list[InterviewQuestion] = Field(max_length=18)
+    fundamentals_questions: list[InterviewQuestion] = Field(max_length=18)
+
+
+class GenerateInterviewPrepBody(BaseModel):
+    jd_id: UUID
+
+
+class InterviewPrepResponse(BaseModel):
+    jd_id: UUID
+    confident_questions: list[InterviewQuestion]
+    fundamentals_questions: list[InterviewQuestion]

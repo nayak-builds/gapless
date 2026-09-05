@@ -140,6 +140,31 @@ export async function saveOwnedSkills(skills: string[]): Promise<string[]> {
   return data.skills;
 }
 
+export async function addOwnedSkills(skills: string[]): Promise<string[]> {
+  const data = await request<{ skills: string[] }>("/skills/owned/bulk", {
+    method: "POST",
+    body: JSON.stringify({ skills }),
+  });
+  return data.skills;
+}
+
+export type ResumeSkill = {
+  name: string;
+};
+
+export type ParseResumeResponse = {
+  skills: ResumeSkill[];
+};
+
+export async function parseResume(file: File): Promise<ParseResumeResponse> {
+  const body = new FormData();
+  body.append("file", file);
+  return request<ParseResumeResponse>("/resume/parse", {
+    method: "POST",
+    body,
+  });
+}
+
 export async function parseJd(rawText: string): Promise<ParseJdResponse> {
   return request<ParseJdResponse>("/jd/parse", {
     method: "POST",
@@ -281,4 +306,33 @@ export async function submitQuiz(
       answers,
     }),
   });
+}
+
+export type InterviewDifficulty = "easy" | "medium" | "hard";
+
+export type InterviewQuestion = {
+  skill: string;
+  difficulty: InterviewDifficulty;
+  question: string;
+};
+
+export type InterviewPrepResponse = {
+  jd_id: string;
+  confident_questions: InterviewQuestion[];
+  fundamentals_questions: InterviewQuestion[];
+};
+
+export async function generateInterviewPrep(
+  jdId: string,
+): Promise<InterviewPrepResponse> {
+  return request<InterviewPrepResponse>("/interview-prep/generate", {
+    method: "POST",
+    body: JSON.stringify({ jd_id: jdId }),
+  });
+}
+
+export async function getInterviewPrep(
+  jdId: string,
+): Promise<InterviewPrepResponse> {
+  return request<InterviewPrepResponse>(`/interview-prep/${jdId}`);
 }
