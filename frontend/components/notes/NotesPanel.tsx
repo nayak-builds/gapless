@@ -113,14 +113,14 @@ export function NotesPanel() {
 
   const canSubmit =
     title.trim().length > 0 && (content.trim().length > 0 || file !== null);
+  const showSaveHint = title.trim().length > 0 && !content.trim() && !file;
 
   return (
     <div className="flex flex-col gap-8">
       <Card>
-        <h2 className="font-serif text-2xl text-navy">Upload a note</h2>
+        <h2 className="font-serif text-2xl text-navy">Add a note</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          Paste text or attach a PDF or Markdown file (max 5 MB). Quizzes pull
-          from these notes against missing skills on the dashboard.
+          A title plus pasted text or a PDF. Max 5 MB.
         </p>
         <form className="mt-6 flex flex-col gap-4" onSubmit={(e) => void handleSubmit(e)}>
           <Input
@@ -133,33 +133,55 @@ export function NotesPanel() {
             disabled={saving}
             placeholder="e.g. System design notes"
           />
-          <Textarea
-            id="note-content"
-            label="Note text (optional if you upload a file)"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            disabled={saving}
-            placeholder="Paste a few paragraphs here"
-          />
-          <Input
-            id="note-file"
-            label="File (optional)"
-            type="file"
-            accept=".pdf,.md,.markdown,.txt,application/pdf,text/markdown,text/plain"
-            disabled={saving}
-            ref={fileInputRef}
-            onChange={(event) => {
-              const next = event.target.files?.[0] ?? null;
-              if (next && next.size > MAX_FILE_BYTES) {
-                setError("File is too large (max 5 MB).");
-                setFile(null);
-                event.target.value = "";
-                return;
-              }
-              setError(null);
-              setFile(next);
-            }}
-          />
+          <div className="flex flex-col gap-2">
+            <Textarea
+              id="note-content"
+              label="Note text"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              disabled={saving}
+              placeholder="Paste a few paragraphs here"
+            />
+            <p className="text-sm text-ink-muted">Skip this if you attach a file.</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <input
+              ref={fileInputRef}
+              id="note-file"
+              type="file"
+              className="sr-only"
+              accept=".pdf,.md,.markdown,.txt,application/pdf,text/markdown,text/plain"
+              disabled={saving}
+              onChange={(event) => {
+                const next = event.target.files?.[0] ?? null;
+                if (next && next.size > MAX_FILE_BYTES) {
+                  setError("File is too large (max 5 MB).");
+                  setFile(null);
+                  event.target.value = "";
+                  return;
+                }
+                setError(null);
+                setFile(next);
+              }}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              disabled={saving}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Attach file
+            </Button>
+            <p className="min-w-0 break-words text-sm text-ink-muted">
+              {file ? file.name : "PDF or text, max 5 MB."}
+            </p>
+          </div>
+          {showSaveHint ? (
+            <p className="text-sm text-ink-muted">
+              Paste text or attach a file to save.
+            </p>
+          ) : null}
           <Button
             type="submit"
             className="w-full sm:w-auto"
@@ -177,14 +199,27 @@ export function NotesPanel() {
       </Card>
 
       <div>
-        <h2 className="font-serif text-2xl text-navy">Your notes</h2>
+        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <h2 className="font-serif text-2xl text-navy">Your notes</h2>
+          {!loading && notes.length > 0 ? (
+            <p className="text-sm text-ink-muted">{notes.length} saved</p>
+          ) : null}
+        </div>
         {loading ? (
-          <p className="mt-4 text-sm text-ink-muted">Loading notes…</p>
+          <div className="mt-4 flex flex-col gap-4">
+            <p className="sr-only">Loading notes…</p>
+            {[0, 1].map((index) => (
+              <Card key={index} aria-hidden>
+                <div className="h-6 w-2/3 max-w-sm animate-pulse rounded-sm bg-accent-muted" />
+                <div className="mt-3 h-4 w-40 animate-pulse rounded-sm bg-accent-muted" />
+              </Card>
+            ))}
+          </div>
         ) : notes.length === 0 && !error ? (
           <Card className="mt-4">
             <p className="text-sm text-ink-muted">
-              You haven&apos;t uploaded any notes yet. Add a title and paste a
-              short write-up, or attach a file, then save.
+              No notes yet. Save one above so dashboard quizzes have something
+              to draw from.
             </p>
           </Card>
         ) : (
@@ -192,27 +227,27 @@ export function NotesPanel() {
             {notes.map((item) => (
               <li key={item.id}>
                 <Card>
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <h3 className="break-words font-serif text-lg text-navy">
+                      <h3 className="min-w-0 break-words font-serif text-lg text-navy">
                         {item.title?.trim() || "Untitled note"}
                       </h3>
                       <p className="mt-1 text-sm text-ink-muted">
                         {formatCreatedAt(item.created_at)}
                         <span className="mx-2">·</span>
                         {item.chunk_count}{" "}
-                        {item.chunk_count === 1 ? "chunk" : "chunks"}
+                        {item.chunk_count === 1 ? "section" : "sections"}
                       </p>
                     </div>
                     <Button
-                      variant="danger"
+                      variant="ghost"
                       type="button"
-                      className="w-full sm:w-auto"
+                      className="w-full !text-danger sm:w-auto"
                       disabled={busyId === item.id || saving}
                       aria-busy={busyId === item.id}
                       onClick={() => void handleDelete(item.id)}
                     >
-                      {busyId === item.id ? "Deleting…" : "Delete"}
+                      {busyId === item.id ? "Deleting…" : "Remove"}
                     </Button>
                   </div>
                 </Card>

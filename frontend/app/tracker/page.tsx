@@ -54,7 +54,7 @@ export default function TrackerPage() {
       <div>
         <h1 className="font-serif text-3xl text-navy">Tracker</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Move applications between columns as their status changes.
+          Roles you saved from the dashboard. Change status to move them.
         </p>
       </div>
       <KanbanBoard />

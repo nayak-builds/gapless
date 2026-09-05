@@ -1,0 +1,43 @@
+---
+description: REST naming, server-side auth, error JSON, and shared frontend API client.
+globs: backend/**/*.py, frontend/**/*.ts, frontend/**/*.tsx
+alwaysApply: true
+---
+
+# API conventions
+
+Resource-based endpoint naming. Planned MVP paths:
+
+| Method | Path |
+|---|---|
+| GET | `/health`, `/health/db` |
+| POST | `/auth/login` |
+| GET | `/users/me` |
+| POST | `/jd/parse` |
+| POST | `/gaps/compute` |
+| GET/POST | `/applications` |
+| PATCH/PUT/DELETE | `/applications/{id}` |
+| GET/POST | `/notes` |
+| DELETE | `/notes/{id}` |
+| POST | `/quiz/generate` |
+| POST | `/quiz/submit` |
+| POST | `/interview-prep/generate` |
+| GET | `/interview-prep/{jd_id}` |
+
+Keep this style for new routes. Contract details: `docs/api.md` (update when routes ship).
+
+## Auth
+
+Every **authenticated** endpoint requires a Supabase session token (`Authorization: Bearer <access_token>`) and **verifies `user_id` server-side** before querying. Never trust client-supplied `user_id`. Health routes stay public.
+
+## Errors
+
+Always return structured JSON, never raw stack traces:
+
+```json
+{ "error": "message" }
+```
+
+## Frontend
+
+All frontend API calls go through a **single shared client** (`frontend/lib/api.ts`) instead of scattered `fetch()` calls. That client attaches the session token, uses the API base URL from env, and surfaces `{ "error": "message" }` consistently.

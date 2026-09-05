@@ -63,3 +63,36 @@ async def replace_owned_skills(
                     name,
                 )
     return OwnedSkillsResponse(skills=names)
+
+
+@router.post("/skills/owned/bulk", response_model=OwnedSkillsResponse)
+async def add_owned_skills(
+    body: SkillNamesBody,
+    user_id: str = Depends(get_current_user_id),
+) -> OwnedSkillsResponse:
+    names = normalize_skill_names(body.skills)
+    async with acquire() as conn:
+        existing_rows = await conn.fetch(
+            """
+            select skill_name
+            from public.skills_owned
+            where user_id = $1::uuid
+            order by skill_name
+            """,
+            user_id,
+        )
+        existing = [row["skill_name"] for row in existing_rows if row["skill_name"]]
+        seen = {name.casefold() for name in existing}
+        to_insert = [name for name in names if name.casefold() not in seen]
+        async with conn.transaction():
+            for name in to_insert:
+                await conn.execute(
+                    """
+                    insert into public.skills_owned (user_id, skill_name, proficiency)
+                    values ($1::uuid, $2, null)
+                    """,
+                    user_id,
+                    name,
+                )
+    merged = sorted(existing + to_insert, key=lambda n: n.casefold())
+    return OwnedSkillsResponse(skills=merged)

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ApplicationCard } from "@/components/tracker/ApplicationCard";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
   deleteApplication,
@@ -18,6 +19,14 @@ const COLUMNS: { status: ApplicationStatus; title: string }[] = [
   { status: "offer", title: "Offer" },
   { status: "rejected", title: "Rejected" },
 ];
+
+function LaneGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      {children}
+    </div>
+  );
+}
 
 export function KanbanBoard() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -92,9 +101,21 @@ export function KanbanBoard() {
 
   if (loading) {
     return (
-      <Card>
-        <p className="text-ink-muted">Loading applications…</p>
-      </Card>
+      <div>
+        <p className="sr-only">Loading applications…</p>
+        <LaneGrid>
+          {COLUMNS.map((column) => (
+            <Card
+              key={column.status}
+              className="flex min-h-[12rem] min-w-0 flex-col gap-4"
+              aria-hidden
+            >
+              <div className="h-6 w-24 animate-pulse rounded-sm bg-accent-muted" />
+              <div className="h-20 animate-pulse rounded-md border border-line bg-accent-muted" />
+            </Card>
+          ))}
+        </LaneGrid>
+      </div>
     );
   }
 
@@ -107,47 +128,54 @@ export function KanbanBoard() {
       ) : null}
       {applications.length === 0 && !error ? (
         <Card>
-          <h2 className="font-serif text-xl text-navy">No applications yet</h2>
+          <h2 className="font-serif text-xl text-navy">Nothing on the board yet</h2>
           <p className="mt-2 max-w-prose text-sm text-ink-muted">
-            Your tracker is empty — that&apos;s normal for a new account. Analyze
-            a job description on the dashboard, then choose{" "}
-            <span className="text-ink">Track this application</span>.
+            Analyze a job on the Dashboard, then Track this application.
           </p>
+          <Button href="/dashboard" variant="secondary" className="mt-4 w-full sm:w-auto">
+            Go to Dashboard
+          </Button>
         </Card>
       ) : applications.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {COLUMNS.map((column) => {
-          const cards = applications.filter(
-            (item) => item.status === column.status,
-          );
-          return (
-            <section key={column.status} className="flex min-w-0 flex-col gap-4">
-              <h2 className="font-serif text-xl text-navy">
-                {column.title}
-                <span className="ml-2 text-sm font-sans font-medium text-ink-muted">
-                  {cards.length}
-                </span>
-              </h2>
-              {cards.length === 0 ? (
-                <p className="text-sm text-ink-muted">No applications here yet.</p>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {cards.map((item) => (
-                    <ApplicationCard
-                      key={item.id}
-                      application={item}
-                      busy={busyId === item.id}
-                      busyKind={busyId === item.id ? busyKind : null}
-                      onStatusChange={handleStatusChange}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          );
-        })}
-        </div>
+        <>
+          <p className="text-sm text-ink-muted">{applications.length} saved</p>
+          <LaneGrid>
+            {COLUMNS.map((column) => {
+              const cards = applications.filter(
+                (item) => item.status === column.status,
+              );
+              return (
+                <Card
+                  key={column.status}
+                  className="flex min-h-[12rem] min-w-0 flex-col gap-4"
+                >
+                  <h2 className="font-serif text-xl text-navy">
+                    {column.title}
+                    <span className="ml-2 text-sm font-sans font-medium text-ink-muted">
+                      {cards.length}
+                    </span>
+                  </h2>
+                  {cards.length === 0 ? (
+                    <p className="text-sm text-ink-muted">None</p>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {cards.map((item) => (
+                        <ApplicationCard
+                          key={item.id}
+                          application={item}
+                          busy={busyId === item.id}
+                          busyKind={busyId === item.id ? busyKind : null}
+                          onStatusChange={handleStatusChange}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </LaneGrid>
+        </>
       ) : null}
     </div>
   );

@@ -2,10 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import {
-  type Application,
-  type ApplicationStatus,
-} from "@/lib/api";
+import { type Application, type ApplicationStatus } from "@/lib/api";
 
 const STATUSES: { value: ApplicationStatus; label: string }[] = [
   { value: "applied", label: "Applied" },
@@ -14,20 +11,23 @@ const STATUSES: { value: ApplicationStatus; label: string }[] = [
   { value: "rejected", label: "Rejected" },
 ];
 
-function displayCompany(value: string | null): string {
+function isUnknown(value: string | null): boolean {
   const trimmed = value?.trim();
-  if (!trimmed || trimmed.toLowerCase() === "unknown") {
-    return "Unknown company";
+  return !trimmed || trimmed.toLowerCase() === "unknown";
+}
+
+function displayCompany(value: string | null): string {
+  if (isUnknown(value)) {
+    return "Company not listed";
   }
-  return trimmed;
+  return value!.trim();
 }
 
 function displayRole(value: string | null): string {
-  const trimmed = value?.trim();
-  if (!trimmed || trimmed.toLowerCase() === "unknown") {
-    return "Untitled role";
+  if (isUnknown(value)) {
+    return "Role not listed";
   }
-  return trimmed;
+  return value!.trim();
 }
 
 function formatAppliedAt(iso: string): string {
@@ -58,13 +58,28 @@ export function ApplicationCard({
   onDelete,
 }: ApplicationCardProps) {
   const selectId = `status-${application.id}`;
+  const companyMissing = isUnknown(application.company);
+  const title = companyMissing
+    ? displayRole(application.role_title)
+    : displayCompany(application.company);
+  const subtitle = companyMissing
+    ? displayCompany(application.company)
+    : displayRole(application.role_title);
 
   return (
-    <Card>
-      <h3 className="break-words font-serif text-lg text-navy">
-        {displayCompany(application.company)}
+    <Card className="p-4 shadow-none">
+      <h3 className="min-w-0 break-words font-serif text-lg text-navy">
+        {title}
       </h3>
-      <p className="mt-1 break-words text-sm text-ink">{displayRole(application.role_title)}</p>
+      <p
+        className={
+          companyMissing
+            ? "mt-1 min-w-0 break-words text-sm text-ink-muted"
+            : "mt-1 min-w-0 break-words text-sm text-ink"
+        }
+      >
+        {subtitle}
+      </p>
       <p className="mt-2 text-sm text-ink-muted">
         Applied {formatAppliedAt(application.applied_at)}
       </p>
@@ -75,7 +90,7 @@ export function ApplicationCard({
           </p>
         ) : null}
         <label htmlFor={selectId} className="text-sm font-medium text-ink">
-          Status
+          Move to
         </label>
         <select
           id={selectId}
@@ -94,14 +109,14 @@ export function ApplicationCard({
           ))}
         </select>
         <Button
-          variant="danger"
+          variant="ghost"
           type="button"
-          className="w-full"
+          className="w-full !text-danger sm:w-auto"
           disabled={busy}
           aria-busy={busy && busyKind === "delete"}
           onClick={() => onDelete(application.id)}
         >
-          {busy && busyKind === "delete" ? "Deleting…" : "Delete"}
+          {busy && busyKind === "delete" ? "Deleting…" : "Remove"}
         </Button>
       </div>
     </Card>

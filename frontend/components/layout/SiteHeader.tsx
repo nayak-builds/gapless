@@ -59,6 +59,12 @@ export function SiteHeader() {
     }
   }
 
+  const linkClass = (active: boolean) =>
+    cn(
+      "rounded-sm px-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-3",
+      active ? "text-accent" : "text-ink-muted hover:text-ink",
+    );
+
   return (
     <header className="border-b border-line bg-surface">
       <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 md:px-6">
@@ -70,52 +76,48 @@ export function SiteHeader() {
         </Link>
 
         <nav
-          className="flex min-w-0 flex-wrap items-center justify-end gap-1 sm:gap-2 md:gap-4"
+          className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1 sm:gap-2"
           aria-label="Primary"
         >
           <Link
             href="/dashboard"
-            className={cn(
-              "px-2 text-sm font-medium sm:px-3",
-              onDashboard ? "text-accent" : "text-ink-muted hover:text-ink",
-            )}
+            className={linkClass(onDashboard)}
+            aria-current={onDashboard ? "page" : undefined}
           >
             Dashboard
           </Link>
           <Link
             href="/tracker"
-            className={cn(
-              "px-2 text-sm font-medium sm:px-3",
-              onTracker ? "text-accent" : "text-ink-muted hover:text-ink",
-            )}
+            className={linkClass(onTracker)}
+            aria-current={onTracker ? "page" : undefined}
           >
             Tracker
           </Link>
           <Link
             href="/notes"
-            className={cn(
-              "px-2 text-sm font-medium sm:px-3",
-              onNotes ? "text-accent" : "text-ink-muted hover:text-ink",
-            )}
+            className={linkClass(onNotes)}
+            aria-current={onNotes ? "page" : undefined}
           >
             Notes
           </Link>
           {email ? (
-            <>
-              <span className="hidden max-w-48 truncate text-sm text-ink-muted md:inline lg:max-w-xs">
-                {email}
-              </span>
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={handleSignOut}
-                disabled={signingOut}
-              >
-                Sign out
-              </Button>
-            </>
+            <Button
+              variant="secondary"
+              type="button"
+              className="shrink-0"
+              title={email}
+              aria-label={`Sign out ${email}`}
+              onClick={handleSignOut}
+              disabled={signingOut}
+            >
+              {signingOut ? "Signing out…" : "Sign out"}
+            </Button>
           ) : (
-            <Button variant={onSignIn ? "secondary" : "primary"} href="/signin">
+            <Button
+              variant={onSignIn ? "secondary" : "primary"}
+              className="shrink-0"
+              href="/signin"
+            >
               Sign in
             </Button>
           )}

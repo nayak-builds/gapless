@@ -55,9 +55,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="font-serif text-3xl text-navy">Dashboard</h1>
         <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-          Start by listing skills you already have, then paste a job description
-          to see the gap. New here? An empty skills list is expected — add a
-          few, then analyze a JD.
+          Add what you already know, paste a job, see the gap.
         </p>
       </div>
       <SkillsCard />

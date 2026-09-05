@@ -1,0 +1,67 @@
+---
+description: Live Postgres schema, foreign keys, and mandatory RLS on every table.
+alwaysApply: true
+---
+
+# Database schema
+
+Canonical SQL: `backend/migrations/001_initial_schema.sql` plus later files in `backend/migrations/` (apply in order in the Supabase SQL Editor).
+
+## Tables
+
+**`profiles`**
+- `id` uuid PK → `auth.users(id)` ON DELETE CASCADE
+- `email` text, `full_name` text, `created_at` timestamptz
+
+**`job_descriptions`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `raw_text` text, `company` text, `role_title` text, `created_at` timestamptz
+
+**`applications`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `jd_id` uuid NOT NULL → `job_descriptions(id)` ON DELETE CASCADE
+- `status` text (`applied` | `interviewing` | `offer` | `rejected`), `applied_at` timestamptz
+
+**`skills_required`**
+- `id` uuid PK, `jd_id` uuid NOT NULL → `job_descriptions(id)` ON DELETE CASCADE
+- `skill_name` text, `importance` text
+- No `user_id`; RLS via parent JD (`job_descriptions.user_id = auth.uid()`)
+
+**`skills_owned`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `skill_name` text, `proficiency` int
+
+**`gaps`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `jd_id` uuid NOT NULL → `job_descriptions(id)` ON DELETE CASCADE
+- `skill_name` text, `gap_level` text
+
+**`notes`** (V2 ingest)
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `title` text, `content` text, `created_at` timestamptz
+
+**`embeddings`** (V2 ingest; vectors in Postgres via pgvector)
+- `id` uuid PK, `note_id` uuid NOT NULL → `notes(id)` ON DELETE CASCADE
+- `chunk_text` text, `chunk_index` int, `embedding` vector(384), `created_at` timestamptz
+- No `user_id`; RLS via parent note (`notes.user_id = auth.uid()`)
+
+**`quiz_attempts`** (V2 quizzes)
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `gap_id` uuid NOT NULL → `gaps(id)` ON DELETE CASCADE
+- `skill_name` text, `questions` jsonb, `answers` jsonb, `score` int
+- `taken_at` timestamptz, `next_review_at` timestamptz
+- Recomputing gaps deletes old `gaps` rows and **cascades** these attempts
+
+**`interview_question_sets`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `jd_id` uuid NOT NULL → `job_descriptions(id)` ON DELETE CASCADE
+- `confident_questions` jsonb, `fundamentals_questions` jsonb, `created_at` timestamptz
+- Unique `(user_id, jd_id)` — regenerate overwrites the existing row
+
+Indexes already exist: `applications (user_id, status)`, `skills_required (jd_id)`, `gaps (user_id, jd_id)`, `notes (user_id)`, `embeddings (note_id)`, `embeddings (embedding)` HNSW cosine, `quiz_attempts (user_id, next_review_at)`, `interview_question_sets (user_id, jd_id)` unique.
+
+## RLS (hard rule)
+
+Every table has **Row Level Security enabled**. A user may only read/write rows where `user_id` (or `id` for `profiles`) equals `auth.uid()`. Child tables without `user_id` (`skills_required`, `embeddings`) must scope through a parent row the user owns.
+
+**Any new table must follow this same pattern before it is usable** — no exceptions, even for "temporary" or "internal" tables. Enable RLS and ship policies in the same PR as the migration.
