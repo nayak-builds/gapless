@@ -14,7 +14,10 @@ export function SiteHeader() {
   const onDashboard = pathname === "/dashboard";
   const onTracker = pathname === "/tracker";
   const onNotes = pathname === "/notes";
-  const onSignIn = pathname === "/signin";
+  const onSignIn =
+    pathname === "/signin" ||
+    pathname === "/forgot-password" ||
+    pathname === "/update-password";
   const [email, setEmail] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 

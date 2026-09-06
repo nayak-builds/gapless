@@ -9,7 +9,9 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const needsAuth =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/tracker");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/tracker") ||
+    pathname.startsWith("/notes");
 
   if (!url || !anonKey) {
     if (needsAuth) {

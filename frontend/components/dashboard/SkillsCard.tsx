@@ -99,6 +99,18 @@ export function SkillsCard() {
     await persist(skills.filter((s) => s !== name));
   }
 
+  async function handleClearAll() {
+    const ok = window.confirm(
+      `Remove all ${skills.length} saved skills? The next job you analyze will treat you as having none until you add skills again.`,
+    );
+    if (!ok) return;
+    const cleared = await persist([]);
+    if (cleared) {
+      setExtracted([]);
+      setChecked(new Set());
+    }
+  }
+
   async function handleResumeFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     event.target.value = "";
@@ -167,10 +179,21 @@ export function SkillsCard() {
 
   return (
     <Card>
-      <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
         <h2 className="font-serif text-2xl text-navy">Your skills</h2>
         {!loading && skills.length > 0 ? (
-          <p className="text-sm text-ink-muted">{skills.length} saved</p>
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <p className="text-sm text-ink-muted">{skills.length} saved</p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full !text-danger sm:w-auto"
+              disabled={busy}
+              onClick={() => void handleClearAll()}
+            >
+              Clear all
+            </Button>
+          </div>
         ) : null}
       </div>
       <p className="mt-2 text-sm text-ink-muted">

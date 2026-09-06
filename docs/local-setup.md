@@ -13,7 +13,9 @@ npm run dev
 
 Edit `frontend/.env.local` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon key only), and `NEXT_PUBLIC_API_URL=http://localhost:8000` (`NEXT_PUBLIC_API_BASE_URL` still works). Restart `npm run dev` after changing `NEXT_PUBLIC_*` values.
 
-Open [http://localhost:3000](http://localhost:3000). Routes: `/`, `/signin` (email + password), `/dashboard` (session required). For local signup without a confirmation email, turn off **Confirm email** in the dev project's Auth settings.
+Open [http://localhost:3000](http://localhost:3000). Routes: `/`, `/signin` (email + password), `/forgot-password` (reset email), `/update-password` (new password after the email link), `/dashboard` (session required). For local signup without a confirmation email, turn off **Confirm email** in the dev project's Auth settings.
+
+Password reset: in the Supabase dashboard, Auth → URL configuration, add `http://localhost:3000/auth/callback` (and your production origin `https://<your-app>/auth/callback`) to **Redirect URLs**. Site URL stays the app origin. The reset email will not arrive until Auth email (or SMTP) is working. Open the link in the **same browser** you used to request the reset.
 
 FastAPI login (`POST /auth/login`) is not used for this UI yet. Do not point this UI at production Supabase.
 

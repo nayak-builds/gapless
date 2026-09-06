@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from auth import get_current_user_id
@@ -8,8 +10,16 @@ from rate_limit import enforce_llm_rate_limit
 from schemas import ParseResumeResponse, ResumeSkillOut
 
 router = APIRouter(tags=["resume"])
+logger = logging.getLogger(__name__)
 
 _MIN_RESUME_CHARS = 50
+_LOG_SNIPPET = 300
+# Must match llm._RESUME_LLM_MAX_CHARS (Groq input clip, not MAX_JD_CHARS).
+_GROQ_RESUME_CHARS = 4000
+
+
+def _one_line(text: str, limit: int) -> str:
+    return " ".join(text.split())[:limit]
 
 
 @router.post("/resume/parse", response_model=ParseResumeResponse)
@@ -19,6 +29,22 @@ async def parse_resume(
 ) -> ParseResumeResponse:
     text = await extract_upload_text(file)
     stripped = text.strip()
+    char_count = len(stripped)
+    logger.warning(
+        "resume parse extract: chars=%s max_jd_chars=%s         groq_clip=%s "
+        "would_reject_max_jd=%s would_clip_for_groq=%s suffix=%s "
+        "first_%s=%r last_%s=%r",
+        char_count,
+        get_settings().max_jd_chars,
+        _GROQ_RESUME_CHARS,
+        char_count > get_settings().max_jd_chars,
+        char_count > _GROQ_RESUME_CHARS,
+        (file.filename or "").rsplit(".", 1)[-1].lower() if file.filename else "",
+        _LOG_SNIPPET,
+        _one_line(stripped[:_LOG_SNIPPET], _LOG_SNIPPET),
+        _LOG_SNIPPET,
+        _one_line(stripped[-_LOG_SNIPPET:], _LOG_SNIPPET),
+    )
     if len(stripped) < _MIN_RESUME_CHARS:
         raise HTTPException(
             status_code=422,
@@ -37,6 +63,12 @@ async def parse_resume(
 
     enforce_llm_rate_limit(user_id)
     extracted = await extract_resume_skills(stripped)
+    names = [skill.name for skill in extracted.skills]
+    logger.warning(
+        "resume parse groq: returned=%s sample=%s",
+        len(names),
+        names[:12],
+    )
     return ParseResumeResponse(
         skills=[ResumeSkillOut(name=skill.name) for skill in extracted.skills]
     )
