@@ -58,7 +58,12 @@ Canonical SQL: `backend/migrations/001_initial_schema.sql` plus later files in `
 - `confident_questions` jsonb, `fundamentals_questions` jsonb, `created_at` timestamptz
 - Unique `(user_id, jd_id)` — regenerate overwrites the existing row
 
-Indexes already exist: `applications (user_id, status)`, `skills_required (jd_id)`, `gaps (user_id, jd_id)`, `notes (user_id)`, `embeddings (note_id)`, `embeddings (embedding)` HNSW cosine, `quiz_attempts (user_id, next_review_at)`, `interview_question_sets (user_id, jd_id)` unique.
+**`resumes`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `raw_text` text NOT NULL, `created_at` timestamptz
+- One row per upload; match-score uses the most recent row
+
+Indexes already exist: `applications (user_id, status)`, `skills_required (jd_id)`, `gaps (user_id, jd_id)`, `notes (user_id)`, `embeddings (note_id)`, `embeddings (embedding)` HNSW cosine, `quiz_attempts (user_id, next_review_at)`, `interview_question_sets (user_id, jd_id)` unique, `resumes (user_id, created_at desc)`.
 
 ## RLS (hard rule)
 

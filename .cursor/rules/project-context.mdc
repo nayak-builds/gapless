@@ -1,0 +1,39 @@
+---
+description: Gapless product, stack, repo layout, and Postgres schema (RLS).
+alwaysApply: true
+---
+
+# Gapless — project context
+
+Gapless is an India-first **job-search copilot**. A user pastes a job description, gets an AI-extracted skill breakdown, sees a **gap diff** against their own skills, and tracks applications in a **kanban** (`applied` | `interviewing` | `offer` | `rejected`). **Later (V2):** quizzes generated from the user's uploaded notes, targeted at those gaps. Do not implement V2 during MVP unless the user explicitly asks. See `docs/product-scope.md`.
+
+FastAPI is the **trusted boundary**. The browser talks only to the Gapless API. No frontend access to Postgres or LLM providers. Identity comes from the verified Supabase JWT — never trust client `user_id`. Source of truth: `docs/product/project-research-report.md` and `docs/architecture.md`. Record new decisions in `docs/assumptions.md`.
+
+## Layout
+
+- `/frontend` — Next.js 14 App Router, React, TypeScript, Tailwind
+- `/backend` — FastAPI + Pydantic (Python 3.12). Domain flow: route → service → repository / AI
+- `/docs` — architecture, scope, API, env, governance
+- `.cursor/rules` and `.cursor/skills` — agent constraints and workflows
+
+## Stack (current)
+
+| Layer | Choice |
+|---|---|
+| Auth, Postgres, Storage, pgvector | Supabase |
+| LLM | Groq (via backend; LangChain when orchestration is added) |
+| Frontend host | Vercel |
+| Backend host | Render (Fly.io is the documented alternative) |
+
+## Schema (RLS required)
+
+Tables: `profiles`, `job_descriptions`, `applications`, `skills_required`, `skills_owned`, `gaps`, `notes`, `embeddings`, `quiz_attempts`, `interview_question_sets`, `resumes`. Canonical SQL: `backend/migrations/001_initial_schema.sql` and later files in `backend/migrations/`.
+
+**Every table has RLS enabled.** Policies are scoped to the owning user via `auth.uid()`:
+
+- `profiles`: `id = auth.uid()`
+- `job_descriptions`, `applications`, `skills_owned`, `gaps`, `notes`, `quiz_attempts`, `interview_question_sets`, `resumes`: `user_id = auth.uid()` (plus parent-JD checks on insert where needed)
+- `skills_required`: no `user_id`; scope through parent `job_descriptions.user_id = auth.uid()`
+- `embeddings`: no `user_id`; scope through parent `notes.user_id = auth.uid()`
+
+**Any new table must enable RLS and ship matching policies in the same PR** before any endpoint uses it. RLS is defense in depth; FastAPI still verifies the JWT and enforces authz.
