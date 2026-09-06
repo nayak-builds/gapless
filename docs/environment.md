@@ -75,4 +75,4 @@ After changing `NEXT_PUBLIC_*`, trigger a new Vercel build (they are inlined at 
 
 ### Supabase dashboard (not Render/Vercel env)
 
-Auth → URL configuration: **Site URL** = your Vercel origin. Add the same origin to **Redirect URLs**.
+Auth → URL configuration: **Site URL** = your Vercel origin. Add that origin and `https://<your-app>/auth/callback` (plus `http://localhost:3000/auth/callback` for local reset) to **Redirect URLs**. Password reset emails use that callback path.

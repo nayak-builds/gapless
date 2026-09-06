@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -119,6 +120,22 @@ export default function SignInPage() {
             required
             disabled={pending}
           />
+          {!isSignUp ? (
+            <p className="-mt-2">
+              <Link
+                href="/forgot-password"
+                className={
+                  pending
+                    ? "pointer-events-none text-sm font-medium text-ink-muted"
+                    : "text-sm font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                }
+                aria-disabled={pending}
+                tabIndex={pending ? -1 : undefined}
+              >
+                Forgot password?
+              </Link>
+            </p>
+          ) : null}
           {error ? (
             <p className="text-sm text-danger" role="alert">
               {error}
