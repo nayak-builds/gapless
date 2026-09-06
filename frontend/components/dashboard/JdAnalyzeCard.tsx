@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import {
+  ApiError,
   computeGaps,
   createApplication,
   parseJd,
@@ -14,7 +15,7 @@ import {
 import { InterviewPrepCard } from "@/components/dashboard/InterviewPrepCard";
 import { QuizModal } from "@/components/dashboard/QuizModal";
 
-const LAST_ANALYSIS_KEY = "gapless:last-jd-analysis";
+const LEGACY_ANALYSIS_KEY = "gapless:last-jd-analysis";
 
 type StoredAnalysis = {
   jdId: string;
@@ -22,9 +23,13 @@ type StoredAnalysis = {
   result: ComputeGapsResponse;
 };
 
-function loadStoredAnalysis(): StoredAnalysis | null {
+function analysisStorageKey(userId: string): string {
+  return `${LEGACY_ANALYSIS_KEY}:${userId}`;
+}
+
+function loadStoredAnalysis(userId: string): StoredAnalysis | null {
   try {
-    const raw = sessionStorage.getItem(LAST_ANALYSIS_KEY);
+    const raw = sessionStorage.getItem(analysisStorageKey(userId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredAnalysis;
     if (!parsed?.jdId || !parsed.result) return null;
@@ -34,15 +39,35 @@ function loadStoredAnalysis(): StoredAnalysis | null {
   }
 }
 
-function saveStoredAnalysis(value: StoredAnalysis) {
+function saveStoredAnalysis(userId: string, value: StoredAnalysis) {
   try {
-    sessionStorage.setItem(LAST_ANALYSIS_KEY, JSON.stringify(value));
+    sessionStorage.removeItem(LEGACY_ANALYSIS_KEY);
+    sessionStorage.setItem(analysisStorageKey(userId), JSON.stringify(value));
   } catch {
     /* ignore quota */
   }
 }
 
-export function JdAnalyzeCard() {
+function clearStoredAnalysis(userId: string) {
+  try {
+    sessionStorage.removeItem(LEGACY_ANALYSIS_KEY);
+    sessionStorage.removeItem(analysisStorageKey(userId));
+  } catch {
+    /* ignore */
+  }
+}
+
+function isMissingJdError(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 403 || err.status === 404);
+}
+
+export function JdAnalyzeCard({
+  userId,
+  skillsFingerprint,
+}: {
+  userId: string;
+  skillsFingerprint: string | null;
+}) {
   const [rawText, setRawText] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,14 +80,82 @@ export function JdAnalyzeCard() {
   const [quizGap, setQuizGap] = useState<{ id: string; name: string } | null>(
     null,
   );
+  const [gapUpdated, setGapUpdated] = useState(false);
+  const skipNextRefreshRef = useRef(false);
+  const seenFingerprintRef = useRef<string | null>(null);
+  const seniorityRef = useRef(seniority);
+  seniorityRef.current = seniority;
+  const emptyProfile = skillsFingerprint === "";
 
   useEffect(() => {
-    const stored = loadStoredAnalysis();
-    if (!stored) return;
+    skipNextRefreshRef.current = false;
+    seenFingerprintRef.current = null;
+    const stored = loadStoredAnalysis(userId);
+    if (!stored) {
+      setJdId(null);
+      setSeniority(null);
+      setResult(null);
+      setGapUpdated(false);
+      return;
+    }
     setJdId(stored.jdId);
     setSeniority(stored.seniority);
     setResult(stored.result);
-  }, []);
+  }, [userId]);
+
+  const discardAnalysis = useCallback(() => {
+    setResult(null);
+    setSeniority(null);
+    setJdId(null);
+    setGapUpdated(false);
+    setQuizGap(null);
+    clearStoredAnalysis(userId);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!jdId || skillsFingerprint === null) return;
+    if (skipNextRefreshRef.current) {
+      skipNextRefreshRef.current = false;
+      seenFingerprintRef.current = skillsFingerprint;
+      return;
+    }
+
+    let cancelled = false;
+    const activeJdId = jdId;
+    const showUpdated =
+      seenFingerprintRef.current !== null &&
+      seenFingerprintRef.current !== skillsFingerprint;
+
+    async function refreshGaps() {
+      try {
+        const gaps = await computeGaps(activeJdId);
+        if (cancelled) return;
+        setResult(gaps);
+        setGapUpdated(showUpdated);
+        setQuizGap(null);
+        saveStoredAnalysis(userId, {
+          jdId: activeJdId,
+          seniority: seniorityRef.current,
+          result: gaps,
+        });
+        seenFingerprintRef.current = skillsFingerprint;
+      } catch (err) {
+        if (cancelled) return;
+        if (isMissingJdError(err)) {
+          discardAnalysis();
+          return;
+        }
+        setError(
+          toUserMessage(err, "Couldn't refresh this gap. Please try again."),
+        );
+      }
+    }
+
+    void refreshGaps();
+    return () => {
+      cancelled = true;
+    };
+  }, [jdId, skillsFingerprint, userId, discardAnalysis]);
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,18 +166,19 @@ export function JdAnalyzeCard() {
     try {
       const parsed = await parseJd(rawText);
       const gaps = await computeGaps(parsed.jd_id);
+      skipNextRefreshRef.current = true;
+      seenFingerprintRef.current = skillsFingerprint;
       setSeniority(parsed.seniority);
       setResult(gaps);
       setJdId(parsed.jd_id);
-      saveStoredAnalysis({
+      setGapUpdated(false);
+      saveStoredAnalysis(userId, {
         jdId: parsed.jd_id,
         seniority: parsed.seniority,
         result: gaps,
       });
     } catch (err) {
-      setResult(null);
-      setSeniority(null);
-      setJdId(null);
+      discardAnalysis();
       setError(
         toUserMessage(
           err,
@@ -157,6 +251,16 @@ export function JdAnalyzeCard() {
 
       {result ? (
         <>
+        {emptyProfile ? (
+          <p className="text-sm text-ink" role="status">
+            Your skill list is empty, so everything this posting asks for is a
+            gap until you add what you know.
+          </p>
+        ) : gapUpdated ? (
+          <p className="text-sm text-ink" role="status">
+            Gap updated to match your current skills.
+          </p>
+        ) : null}
         <div className="grid items-stretch gap-6 lg:grid-cols-2">
           <Card className="flex h-full flex-col">
             <div className="flex min-w-0 flex-col gap-3">
@@ -171,9 +275,11 @@ export function JdAnalyzeCard() {
                 ) : null}
               </div>
               <p className="text-sm text-ink-muted">
-                {result.matched.length === 0
-                  ? "Nothing on this posting overlaps your list yet."
-                  : `${result.matched.length} from this posting match your list. Be ready to talk about them.`}
+                {emptyProfile
+                  ? "Add skills above to see what already matches this job."
+                  : result.matched.length === 0
+                    ? "Nothing on this posting overlaps your list yet."
+                    : `${result.matched.length} from this posting match your list. Be ready to talk about them.`}
               </p>
             </div>
             {result.matched.length === 0 ? null : (
@@ -197,7 +303,9 @@ export function JdAnalyzeCard() {
               <p className="text-sm text-ink-muted">
                 {result.missing.length === 0
                   ? "No extra skills called out beyond what you already have."
-                  : `${result.missing.length} to cover. Quiz from your notes, or use Interview Prep below.`}
+                  : emptyProfile
+                    ? `${result.missing.length} on this posting. Quiz to start covering them, or add skills above if you already have some.`
+                    : `${result.missing.length} to cover. Quiz from your notes, or use Interview Prep below.`}
               </p>
             </div>
             {result.missing.length === 0 ? null : (
@@ -267,7 +375,13 @@ export function JdAnalyzeCard() {
             </p>
           ) : null}
         </Card>
-        {jdId ? <InterviewPrepCard jdId={jdId} /> : null}
+        {jdId ? (
+          <InterviewPrepCard
+            jdId={jdId}
+            emptyProfile={emptyProfile}
+            onJdAccessDenied={discardAnalysis}
+          />
+        ) : null}
       </>
       ) : null}
 

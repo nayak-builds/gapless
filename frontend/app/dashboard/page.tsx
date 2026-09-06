@@ -7,9 +7,19 @@ import { SkillsCard } from "@/components/dashboard/SkillsCard";
 import { Card } from "@/components/ui/Card";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
+function skillsFingerprint(names: string[]): string {
+  return names
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean)
+    .sort()
+    .join("\0");
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [skillsKey, setSkillsKey] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +35,7 @@ export default function DashboardPage() {
           router.replace("/signin");
           return;
         }
+        setUserId(user.id);
         setReady(true);
       } catch {
         if (!cancelled) {
@@ -58,8 +69,14 @@ export default function DashboardPage() {
           Add what you already know, paste a job, see the gap.
         </p>
       </div>
-      <SkillsCard />
-      <JdAnalyzeCard />
+      <SkillsCard
+        onSkillsChanged={(names) => {
+          setSkillsKey(skillsFingerprint(names));
+        }}
+      />
+      {userId ? (
+        <JdAnalyzeCard userId={userId} skillsFingerprint={skillsKey} />
+      ) : null}
     </section>
   );
 }

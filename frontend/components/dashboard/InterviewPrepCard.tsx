@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
@@ -77,7 +77,7 @@ function QuestionRow({
         >
           <span
             className={cn(
-              "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
+              "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border",
               practiced
                 ? "border-accent bg-accent"
                 : "border-line bg-surface",
@@ -85,7 +85,19 @@ function QuestionRow({
             aria-hidden
           >
             {practiced ? (
-              <span className="block h-1.5 w-2 -translate-y-px rotate-45 border-b-2 border-r-2 border-navy-fg" />
+              <svg
+                className="h-3.5 w-3.5 text-navy-fg"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M3.5 8.2 6.6 11.3 12.5 4.5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             ) : null}
           </span>
           <span className={practiced ? "text-accent" : "text-ink-muted"}>
@@ -196,13 +208,23 @@ function SkeletonRows() {
   );
 }
 
-export function InterviewPrepCard({ jdId }: { jdId: string }) {
+export function InterviewPrepCard({
+  jdId,
+  emptyProfile = false,
+  onJdAccessDenied,
+}: {
+  jdId: string;
+  emptyProfile?: boolean;
+  onJdAccessDenied?: () => void;
+}) {
   const [prep, setPrep] = useState<InterviewPrepResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [practiced, setPracticed] = useState<Record<string, boolean>>({});
   const [mobileTab, setMobileTab] = useState<ColumnKind>("missing");
+  const onJdAccessDeniedRef = useRef(onJdAccessDenied);
+  onJdAccessDeniedRef.current = onJdAccessDenied;
 
   useEffect(() => {
     let cancelled = false;
@@ -220,7 +242,15 @@ export function InterviewPrepCard({ jdId }: { jdId: string }) {
         }
       } catch (err) {
         if (cancelled) return;
+        if (err instanceof ApiError && err.status === 403) {
+          onJdAccessDeniedRef.current?.();
+          return;
+        }
         if (err instanceof ApiError && err.status === 404) {
+          if (/job description/i.test(err.message)) {
+            onJdAccessDeniedRef.current?.();
+            return;
+          }
           setPrep(null);
           return;
         }
@@ -259,6 +289,12 @@ export function InterviewPrepCard({ jdId }: { jdId: string }) {
       const created = await generateInterviewPrep(jdId);
       setPrep(created);
     } catch (err) {
+      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+        if (err.status === 403 || /job description/i.test(err.message)) {
+          onJdAccessDeniedRef.current?.();
+          return;
+        }
+      }
       setError(
         toUserMessage(
           err,
@@ -293,8 +329,9 @@ export function InterviewPrepCard({ jdId }: { jdId: string }) {
         <div className="min-w-0">
           <h3 className="font-serif text-xl text-navy">Interview Prep</h3>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Rehearse this job: defend skills you have, and cover the gaps. No
-            scoring.
+            {emptyProfile
+              ? "Rehearse the skills this posting asks for. Add your own skills above to split have vs gap. No scoring."
+              : "Rehearse this job: defend skills you have, and cover the gaps. No scoring."}
           </p>
           {prep && total > 0 ? (
             <p className="mt-2 text-sm text-ink-muted" aria-live="polite">

@@ -5,10 +5,12 @@ from fastapi import HTTPException
 
 from db import acquire
 from embed import EMBEDDING_DIM, embed_texts
+from skill_match import skills_match
 
 QUIZ_TOP_K = 3
-# Short skill labels vs long note chunks often sit around 0.5–0.8 cosine distance.
-QUIZ_MAX_COSINE_DISTANCE = 0.90
+QUIZ_CANDIDATE_LIMIT = 24
+# Semantic-only keep. Unrelated skill-vs-chunk pairs sit well above this.
+QUIZ_MAX_COSINE_DISTANCE = 0.45
 _MAX_CHUNK_CHARS = 2000
 
 
@@ -21,14 +23,26 @@ def _as_vector(values: list[float]) -> list[float]:
     return [float(v) for v in values]
 
 
+def chunk_matches_skill(
+    skill_name: str,
+    title: str,
+    chunk_text: str,
+    distance: float,
+) -> bool:
+    if skills_match(skill_name, title) or skills_match(skill_name, chunk_text):
+        return True
+    return distance <= QUIZ_MAX_COSINE_DISTANCE
+
+
 async def query_skill_chunks(user_id: str, skill_name: str, n: int = QUIZ_TOP_K) -> list[str]:
     query_vec = await asyncio.to_thread(embed_texts, [skill_name])
     query_vec = _as_vector(query_vec[0])
-    limit = max(n, 1)
+    take = max(n, 1)
     async with acquire() as conn:
         rows = await conn.fetch(
             """
             select e.chunk_text as chunk_text,
+                   n.title as title,
                    (e.embedding <=> $2) as distance
             from public.embeddings e
             inner join public.notes n on n.id = e.note_id
@@ -39,9 +53,10 @@ async def query_skill_chunks(user_id: str, skill_name: str, n: int = QUIZ_TOP_K)
             """,
             user_id,
             query_vec,
-            limit,
+            QUIZ_CANDIDATE_LIMIT,
         )
-    candidates: list[tuple[float, str]] = []
+    kept: list[str] = []
+    seen: set[str] = set()
     for row in rows:
         text = (row["chunk_text"] or "").strip()
         if not text:
@@ -49,16 +64,19 @@ async def query_skill_chunks(user_id: str, skill_name: str, n: int = QUIZ_TOP_K)
         distance = row["distance"]
         if distance is None:
             continue
+        title = " ".join((row["title"] or "").split())
+        if not chunk_matches_skill(skill_name, title, text, float(distance)):
+            continue
         if len(text) > _MAX_CHUNK_CHARS:
             text = text[:_MAX_CHUNK_CHARS]
-        candidates.append((float(distance), text))
-    if not candidates:
-        return []
-    kept = [text for dist, text in candidates if dist <= QUIZ_MAX_COSINE_DISTANCE]
-    if kept:
-        return kept
-    nearest = min(candidates, key=lambda item: item[0])
-    return [nearest[1]]
+        key = text.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        kept.append(text)
+        if len(kept) >= take:
+            break
+    return kept
 
 
 async def insert_note_with_embeddings(

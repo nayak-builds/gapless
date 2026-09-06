@@ -16,7 +16,7 @@ Required vs owned. Categories: matched, missing, partial (if supported), importa
 
 ## RAG (Version 2)
 
-Ingest (implemented): notes (PDF / Markdown / paste) → chunk → ONNX MiniLM (384-d) → `embeddings.embedding` (pgvector). Retrieval: cosine `<=>` for the gap `skill_name`, keep top 3 chunks with distance ≤ 0.90 (or the nearest chunk if all are higher).
+Ingest (implemented): notes (PDF / Markdown / paste) → chunk → ONNX MiniLM (384-d) → `embeddings.embedding` (pgvector). Retrieval: cosine `<=>` for the gap `skill_name`, keep top 3 chunks that match the skill (title/chunk via `skills_match`, or distance ≤ 0.45). Do **not** use the nearest note if it is about a different skill.
 
 Do not add hybrid search, rerankers, or hosted vector DBs until evaluation says the simple pipeline fails.
 

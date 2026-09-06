@@ -26,7 +26,11 @@ function isAllowedResumeFile(file: File): boolean {
   return ALLOWED_SUFFIXES.has(fileSuffix(file.name));
 }
 
-export function SkillsCard() {
+export function SkillsCard({
+  onSkillsChanged,
+}: {
+  onSkillsChanged?: (names: string[]) => void;
+}) {
   const [skills, setSkills] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,8 @@ export function SkillsCard() {
   const [extracted, setExtracted] = useState<string[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onSkillsChangedRef = useRef(onSkillsChanged);
+  onSkillsChangedRef.current = onSkillsChanged;
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +50,7 @@ export function SkillsCard() {
         const names = await getOwnedSkills();
         if (!cancelled) {
           setSkills(names);
+          onSkillsChangedRef.current?.(names);
           setError(null);
         }
       } catch (err) {
@@ -68,6 +75,7 @@ export function SkillsCard() {
     try {
       const saved = await saveOwnedSkills(next);
       setSkills(saved);
+      onSkillsChangedRef.current?.(saved);
       return true;
     } catch (err) {
       setError(
@@ -101,7 +109,7 @@ export function SkillsCard() {
 
   async function handleClearAll() {
     const ok = window.confirm(
-      `Remove all ${skills.length} saved skills? The next job you analyze will treat you as having none until you add skills again.`,
+      `Remove all ${skills.length} saved skills? The gap on this page will refresh against an empty list. Other tracked jobs keep their last analyze until you analyze them again.`,
     );
     if (!ok) return;
     const cleared = await persist([]);
@@ -163,6 +171,7 @@ export function SkillsCard() {
     try {
       const saved = await addOwnedSkills(selected);
       setSkills(saved);
+      onSkillsChangedRef.current?.(saved);
       setExtracted([]);
       setChecked(new Set());
     } catch (err) {

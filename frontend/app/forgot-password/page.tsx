@@ -76,7 +76,8 @@ function ForgotPasswordForm() {
         {sent ? (
           <p className="mt-8 text-sm text-ink" role="status">
             If that email is on an account, check your inbox (and spam) for a
-            reset link. The link expires; request a new one if it does not work.
+            Gapless password reset. The link expires; request a new one if it
+            does not work.
           </p>
         ) : (
           <form className="mt-8 flex flex-col gap-6" onSubmit={(e) => void handleSubmit(e)}>
