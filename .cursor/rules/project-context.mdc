@@ -27,12 +27,12 @@ FastAPI is the **trusted boundary**. The browser talks only to the Gapless API. 
 
 ## Schema (RLS required)
 
-Tables: `profiles`, `job_descriptions`, `applications`, `skills_required`, `skills_owned`, `gaps`, `notes`, `embeddings`, `quiz_attempts`, `interview_question_sets`, `resumes`. Canonical SQL: `backend/migrations/001_initial_schema.sql` and later files in `backend/migrations/`.
+Tables: `profiles`, `job_descriptions`, `applications`, `skills_required`, `skills_owned`, `gaps`, `notes`, `embeddings`, `quiz_attempts`, `interview_question_sets`, `resumes`, `resume_skill_evidence`. Canonical SQL: `backend/migrations/001_initial_schema.sql` and later files in `backend/migrations/`.
 
 **Every table has RLS enabled.** Policies are scoped to the owning user via `auth.uid()`:
 
 - `profiles`: `id = auth.uid()`
-- `job_descriptions`, `applications`, `skills_owned`, `gaps`, `notes`, `quiz_attempts`, `interview_question_sets`, `resumes`: `user_id = auth.uid()` (plus parent-JD checks on insert where needed)
+- `job_descriptions`, `applications`, `skills_owned`, `gaps`, `notes`, `quiz_attempts`, `interview_question_sets`, `resumes`, `resume_skill_evidence`: `user_id = auth.uid()` (plus parent-JD checks on insert where needed)
 - `skills_required`: no `user_id`; scope through parent `job_descriptions.user_id = auth.uid()`
 - `embeddings`: no `user_id`; scope through parent `notes.user_id = auth.uid()`
 
