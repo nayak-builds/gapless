@@ -22,6 +22,26 @@ function practicedStorageKey(jdId: string): string {
   return `interview-prep-practiced:${jdId}`;
 }
 
+function skillKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function prepIsStale(
+  prep: InterviewPrepResponse,
+  matchedNames: string[],
+  missingNames: string[],
+): boolean {
+  const have = new Set(matchedNames.map(skillKey));
+  const miss = new Set(missingNames.map(skillKey));
+  for (const item of prep.confident_questions) {
+    if (miss.has(skillKey(item.skill))) return true;
+  }
+  for (const item of prep.fundamentals_questions) {
+    if (have.has(skillKey(item.skill))) return true;
+  }
+  return false;
+}
+
 function loadPracticed(jdId: string): Record<string, boolean> {
   try {
     const raw = localStorage.getItem(practicedStorageKey(jdId));
@@ -46,10 +66,12 @@ function QuestionRow({
   item,
   practiced,
   onToggle,
+  fromResume,
 }: {
   item: InterviewQuestion;
   practiced: boolean;
   onToggle: () => void;
+  fromResume?: boolean;
 }) {
   const labelId = useId();
 
@@ -61,9 +83,14 @@ function QuestionRow({
       )}
     >
       <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="inline-flex w-fit max-w-full items-center rounded-sm bg-surface px-2 py-0.5 text-xs text-accent ring-1 ring-line">
           <span className="min-w-0 break-words">{item.skill}</span>
         </span>
+        {fromResume ? (
+          <span className="text-xs text-accent">On your resume</span>
+        ) : null}
+        </div>
         <p id={labelId} className="min-w-0 break-words text-sm text-ink">
           {item.question}
         </p>
@@ -113,10 +140,12 @@ function QuestionList({
   items,
   practiced,
   onToggle,
+  resumeKeys,
 }: {
   items: InterviewQuestion[];
   practiced: Record<string, boolean>;
   onToggle: (key: string) => void;
+  resumeKeys: Set<string>;
 }) {
   if (items.length === 0) {
     return (
@@ -154,6 +183,7 @@ function QuestionList({
                   item={item}
                   practiced={Boolean(practiced[key])}
                   onToggle={() => onToggle(key)}
+                  fromResume={resumeKeys.has(skillKey(item.skill))}
                 />
               );
             })}
@@ -169,11 +199,13 @@ function PrepColumn({
   items,
   practiced,
   onToggle,
+  resumeKeys,
 }: {
   kind: ColumnKind;
   items: InterviewQuestion[];
   practiced: Record<string, boolean>;
   onToggle: (key: string) => void;
+  resumeKeys: Set<string>;
 }) {
   const isMissing = kind === "missing";
 
@@ -184,10 +216,15 @@ function PrepColumn({
       </h3>
       <p className="mt-1 text-sm text-ink-muted">
         {isMissing
-          ? "Answer from first principles; they will not expect production war stories."
-          : "Expect follow-ups on real experience."}
+          ? "Learn these from first principles. Interviewers will not expect production war stories."
+          : "Practice talking about real experience — including work that is on your resume but not tagged."}
       </p>
-      <QuestionList items={items} practiced={practiced} onToggle={onToggle} />
+      <QuestionList
+        items={items}
+        practiced={practiced}
+        onToggle={onToggle}
+        resumeKeys={resumeKeys}
+      />
     </Card>
   );
 }
@@ -211,10 +248,16 @@ function SkeletonRows() {
 export function InterviewPrepCard({
   jdId,
   emptyProfile = false,
+  resumeSkillNames = [],
+  matchedNames = [],
+  missingNames = [],
   onJdAccessDenied,
 }: {
   jdId: string;
   emptyProfile?: boolean;
+  resumeSkillNames?: string[];
+  matchedNames?: string[];
+  missingNames?: string[];
   onJdAccessDenied?: () => void;
 }) {
   const [prep, setPrep] = useState<InterviewPrepResponse | null>(null);
@@ -322,6 +365,11 @@ export function InterviewPrepCard({
     (item) => practiced[questionKey(item)],
   ).length;
   const busy = generating || loading;
+  const resumeKeys = new Set(resumeSkillNames.map(skillKey));
+  const stale =
+    prep != null &&
+    (matchedNames.length > 0 || missingNames.length > 0) &&
+    prepIsStale(prep, matchedNames, missingNames);
 
   return (
     <div className="flex flex-col gap-6">
@@ -331,11 +379,17 @@ export function InterviewPrepCard({
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
             {emptyProfile
               ? "Rehearse the skills this posting asks for. Add your own skills above to split have vs gap. No scoring."
-              : "Rehearse this job: defend skills you have, and cover the gaps. No scoring."}
+              : "Practice talking about the have column; learn the missing column from scratch. No scoring."}
           </p>
           {prep && total > 0 ? (
             <p className="mt-2 text-sm text-ink-muted" aria-live="polite">
               {practicedCount} of {total} practiced
+            </p>
+          ) : null}
+          {stale ? (
+            <p className="mt-2 text-sm text-warning" role="status">
+              The gap changed. Regenerate so questions match what you see
+              above.
             </p>
           ) : null}
         </div>
@@ -365,7 +419,8 @@ export function InterviewPrepCard({
       {!loading && !prep ? (
         <Card>
           <p className="text-sm text-ink-muted">
-            We’ll turn this gap into rehearsal questions.
+            We’ll turn this gap into rehearsal questions. Generate when you
+            are ready — this uses an AI request.
           </p>
         </Card>
       ) : null}
@@ -407,11 +462,11 @@ export function InterviewPrepCard({
             </button>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
             <div
               className={cn(
                 mobileTab === "have" ? "block" : "hidden",
-                "lg:block",
+                "min-w-0 lg:block",
               )}
             >
               <PrepColumn
@@ -419,12 +474,13 @@ export function InterviewPrepCard({
                 items={prep.confident_questions}
                 practiced={practiced}
                 onToggle={togglePracticed}
+                resumeKeys={resumeKeys}
               />
             </div>
             <div
               className={cn(
                 mobileTab === "missing" ? "block" : "hidden",
-                "lg:block",
+                "min-w-0 lg:block",
               )}
             >
               <PrepColumn
@@ -432,6 +488,7 @@ export function InterviewPrepCard({
                 items={prep.fundamentals_questions}
                 practiced={practiced}
                 onToggle={togglePracticed}
+                resumeKeys={resumeKeys}
               />
             </div>
           </div>

@@ -58,4 +58,10 @@ Notes ingest (`POST /notes`) uses local ONNX MiniLM (`onnxruntime`) and stores v
 
 Interview prep (`POST /interview-prep/generate`, `GET /interview-prep/{jd_id}`) stores JSON question lists in `interview_question_sets`. Apply `backend/migrations/005_interview_question_sets.sql` in the Supabase SQL Editor before using those routes.
 
+**Production:** apply `006_resumes.sql` then `007_resume_skill_evidence.sql` in the **live** Supabase SQL Editor **before** deploying this backend. Analyze still works without them (resume evidence and wording are skipped). Re-upload a resume after 006 so `resumes.raw_text` exists.
+
+Resume match score (`POST /match-score`) needs stored resume text. Apply `backend/migrations/006_resumes.sql` in the Supabase SQL Editor, then re-upload a resume so `resumes.raw_text` is populated.
+
+Resume-evidenced gaps (`match_source` on `gaps`, cache table `resume_skill_evidence`): apply `backend/migrations/007_resume_skill_evidence.sql` after 006. Then re-analyze a job (or refresh the dashboard gap) so Computer Vision–style skills can move from missing to matched when the resume supports them.
+
 Never use production service-role keys on a laptop.

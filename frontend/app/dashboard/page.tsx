@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { JdAnalyzeCard } from "@/components/dashboard/JdAnalyzeCard";
 import { SkillsCard } from "@/components/dashboard/SkillsCard";
+import { DashboardStep } from "@/components/dashboard/DashboardStep";
 import { Card } from "@/components/ui/Card";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -66,14 +67,19 @@ export default function DashboardPage() {
       <div>
         <h1 className="font-serif text-3xl text-navy">Dashboard</h1>
         <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-          Add what you already know, paste a job, see the gap.
+          For one job: set what you know, paste the posting, then quiz, rewrite,
+          or rehearse.
         </p>
       </div>
-      <SkillsCard
-        onSkillsChanged={(names) => {
-          setSkillsKey(skillsFingerprint(names));
-        }}
-      />
+      <DashboardStep step={1} title="You">
+        <div id="dashboard-step-you">
+          <SkillsCard
+            onSkillsChanged={(names) => {
+              setSkillsKey(skillsFingerprint(names));
+            }}
+          />
+        </div>
+      </DashboardStep>
       {userId ? (
         <JdAnalyzeCard userId={userId} skillsFingerprint={skillsKey} />
       ) : null}

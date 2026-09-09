@@ -2,8 +2,11 @@ import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from asyncpg.exceptions import UndefinedTableError
+
 from auth import get_current_user_id
 from config import get_settings
+from db import acquire
 from llm import extract_resume_skills
 from note_extract import extract_upload_text
 from rate_limit import enforce_llm_rate_limit
@@ -69,6 +72,20 @@ async def parse_resume(
         len(names),
         names[:12],
     )
+    try:
+        async with acquire() as conn:
+            await conn.execute(
+                """
+                insert into public.resumes (user_id, raw_text)
+                values ($1::uuid, $2)
+                """,
+                user_id,
+                stripped,
+            )
+    except UndefinedTableError:
+        logger.warning(
+            "public.resumes is missing; apply backend/migrations/006_resumes.sql"
+        )
     return ParseResumeResponse(
         skills=[ResumeSkillOut(name=skill.name) for skill in extracted.skills]
     )

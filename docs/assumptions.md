@@ -45,6 +45,14 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 - `skills_owned` is the live profile. The dashboard gap for the **current** JD is derived: when the user adds, removes, or clears skills, refresh that JD with `POST /gaps/compute` (no JD re-parse / Groq). Other JDs keep their last compute until the user analyzes them again.
 - An empty owned list is an intentional 100% gap: keep the missing column. Copy must say the list is empty, not that we measured they lack each skill. Zero overlap with a non-empty list uses different copy.
 - Last dashboard analysis in `sessionStorage` is keyed by user id. A 403/404 on that JD discards the snapshot so Interview Prep cannot show another account’s job.
+- When a resume is stored, leftover name-mismatches get a secondary check: cheap phrase/token match in `resumes.raw_text` (single-token skills use word-ish bounds so Git ≠ GitHub), then cached Groq quotes (same verbatim substring gate as match-score). Verified hits are stored as `gap_level = none` with `match_source = resume`. Skill-list refreshes reuse `resume_skill_evidence` and do not call Groq. Quiz and interview-prep only read `gaps`; they do not run this check.
+- `POST /gaps/compute` also returns the weighted `score` / `matched_count` / `total_count` (same Python formula as match-score). The dashboard shows that fit immediately. Groq rewrite suggestions stay opt-in.
+
+## Resume–JD match score
+
+- The percentage is computed in Python from already-saved `gaps` plus `skills_required.importance`. Matched gaps store `gap_level = "none"`, so importance always comes from `skills_required` (unknown → `required`). Required skills weigh 1.0, nice-to-have 0.5. Groq never produces this number.
+- Rewrite suggestions are only for **missing** skills. Each `original_quote` must be a lowercase, whitespace-collapsed substring of the caller’s latest `resumes.raw_text`. Failed checks are dropped and counted in logs (`dropped_hallucinated`). Null quotes (nothing related in the resume) are omitted from the API response.
+- No resume row → 422; do not score from manually typed skills alone.
 
 ## Auth on the frontend
 

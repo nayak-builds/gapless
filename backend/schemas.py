@@ -46,11 +46,15 @@ class GapSkillOut(BaseModel):
     id: UUID
     name: str
     gap_level: str
+    match_source: Literal["owned", "resume"] | None = None
 
 
 class ComputeGapsResponse(BaseModel):
     matched: list[GapSkillOut]
     missing: list[GapSkillOut]
+    score: int = Field(ge=0, le=100)
+    matched_count: int = Field(ge=0)
+    total_count: int = Field(ge=0)
 
 
 ApplicationStatus = Literal["applied", "interviewing", "offer", "rejected"]
@@ -170,3 +174,39 @@ class InterviewPrepResponse(BaseModel):
     jd_id: UUID
     confident_questions: list[InterviewQuestion]
     fundamentals_questions: list[InterviewQuestion]
+
+
+class MatchScoreBody(BaseModel):
+    jd_id: UUID
+
+
+class MatchScoreSuggestion(BaseModel):
+    skill: str
+    original_quote: str
+    suggested_rewrite: str
+
+
+class MatchScoreResponse(BaseModel):
+    score: int = Field(ge=0, le=100)
+    matched_count: int = Field(ge=0)
+    total_count: int = Field(ge=0)
+    suggestions: list[MatchScoreSuggestion]
+
+
+class MatchRewriteItem(BaseModel):
+    skill: str = Field(min_length=1, max_length=80)
+    original_quote: str | None = None
+    suggested_rewrite: str | None = None
+
+
+class MatchRewritePayload(BaseModel):
+    suggestions: list[MatchRewriteItem] = Field(max_length=40)
+
+
+class ResumeEvidenceItem(BaseModel):
+    skill: str = Field(min_length=1, max_length=80)
+    original_quote: str | None = None
+
+
+class ResumeEvidencePayload(BaseModel):
+    evidence: list[ResumeEvidenceItem] = Field(max_length=40)

@@ -120,11 +120,15 @@ export type GapSkill = {
   id: string;
   name: string;
   gap_level: string;
+  match_source?: "owned" | "resume" | null;
 };
 
 export type ComputeGapsResponse = {
   matched: GapSkill[];
   missing: GapSkill[];
+  score?: number;
+  matched_count?: number;
+  total_count?: number;
 };
 
 export async function getOwnedSkills(): Promise<string[]> {
@@ -335,4 +339,24 @@ export async function getInterviewPrep(
   jdId: string,
 ): Promise<InterviewPrepResponse> {
   return request<InterviewPrepResponse>(`/interview-prep/${jdId}`);
+}
+
+export type MatchScoreSuggestion = {
+  skill: string;
+  original_quote: string;
+  suggested_rewrite: string;
+};
+
+export type MatchScoreResponse = {
+  score: number;
+  matched_count: number;
+  total_count: number;
+  suggestions: MatchScoreSuggestion[];
+};
+
+export async function postMatchScore(jdId: string): Promise<MatchScoreResponse> {
+  return request<MatchScoreResponse>("/match-score", {
+    method: "POST",
+    body: JSON.stringify({ jd_id: jdId }),
+  });
 }
