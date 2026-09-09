@@ -35,6 +35,13 @@ Canonical SQL: `backend/migrations/001_initial_schema.sql` plus later files in `
 - `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
 - `jd_id` uuid NOT NULL → `job_descriptions(id)` ON DELETE CASCADE
 - `skill_name` text, `gap_level` text
+- `match_source` text (`owned` | `resume`, null when missing)
+
+**`resume_skill_evidence`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `resume_id` uuid NOT NULL → `resumes(id)` ON DELETE CASCADE
+- `skill_name` text, `skill_key` text (case-folded), `quote` text (null = checked, no evidence)
+- Unique `(resume_id, skill_key)` — gap recompute reuses this cache; new resume invalidates via FK
 
 **`notes`** (V2 ingest)
 - `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
@@ -58,7 +65,12 @@ Canonical SQL: `backend/migrations/001_initial_schema.sql` plus later files in `
 - `confident_questions` jsonb, `fundamentals_questions` jsonb, `created_at` timestamptz
 - Unique `(user_id, jd_id)` — regenerate overwrites the existing row
 
-Indexes already exist: `applications (user_id, status)`, `skills_required (jd_id)`, `gaps (user_id, jd_id)`, `notes (user_id)`, `embeddings (note_id)`, `embeddings (embedding)` HNSW cosine, `quiz_attempts (user_id, next_review_at)`, `interview_question_sets (user_id, jd_id)` unique.
+**`resumes`**
+- `id` uuid PK, `user_id` uuid NOT NULL → `profiles(id)` ON DELETE CASCADE
+- `raw_text` text NOT NULL, `created_at` timestamptz
+- One row per upload; match-score uses the most recent row
+
+Indexes already exist: `applications (user_id, status)`, `skills_required (jd_id)`, `gaps (user_id, jd_id)`, `notes (user_id)`, `embeddings (note_id)`, `embeddings (embedding)` HNSW cosine, `quiz_attempts (user_id, next_review_at)`, `interview_question_sets (user_id, jd_id)` unique, `resumes (user_id, created_at desc)`, `resume_skill_evidence (resume_id, skill_key)` unique.
 
 ## RLS (hard rule)
 

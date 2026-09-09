@@ -23,6 +23,7 @@ Resource-based endpoint naming. Planned MVP paths:
 | POST | `/quiz/submit` |
 | POST | `/interview-prep/generate` |
 | GET | `/interview-prep/{jd_id}` |
+| POST | `/match-score` |
 
 Keep this style for new routes. Contract details: `docs/api.md` (update when routes ship).
 

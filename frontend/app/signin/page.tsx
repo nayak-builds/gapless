@@ -14,6 +14,7 @@ export default function SignInPage() {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const isSignUp = mode === "signup";
@@ -44,11 +45,13 @@ export default function SignInPage() {
   function toggleMode() {
     setMode(isSignUp ? "signin" : "signup");
     setError(null);
+    setSuccess(null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
     setPending(true);
 
     const form = event.currentTarget;
@@ -67,8 +70,8 @@ export default function SignInPage() {
       }
 
       if (isSignUp && !result.data.session) {
-        setError(
-          "Account created. Confirm your email, then sign in. For local testing you can turn off Confirm email in the Supabase Auth settings.",
+        setSuccess(
+          "Check your inbox for an email from Gapless. Confirm your address, then sign in. If you do not see it, look in spam.",
         );
         return;
       }
@@ -139,6 +142,11 @@ export default function SignInPage() {
           {error ? (
             <p className="text-sm text-danger" role="alert">
               {error}
+            </p>
+          ) : null}
+          {success ? (
+            <p className="text-sm text-success" role="status">
+              {success}
             </p>
           ) : null}
           <Button type="submit" className="w-full" disabled={pending}>

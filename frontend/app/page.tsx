@@ -1,5 +1,6 @@
 import { GetStartedButton } from "@/components/home/GetStartedButton";
 import { Card } from "@/components/ui/Card";
+import Link from "next/link";
 
 const STEPS = [
   {
@@ -32,6 +33,22 @@ export default function HomePage() {
       <div className="mt-8 w-full sm:w-auto">
         <GetStartedButton />
       </div>
+      <p className="mt-4 text-sm text-ink-muted">
+        New here?{" "}
+        <Link
+          href="/about"
+          className="font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          About
+        </Link>
+        {" · "}
+        <Link
+          href="/faq"
+          className="font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          FAQ
+        </Link>
+      </p>
 
       <div className="mt-12 w-full md:mt-16 md:text-left">
         <p className="text-sm font-medium text-ink-muted">How it works</p>

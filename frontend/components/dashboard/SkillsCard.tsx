@@ -14,6 +14,7 @@ import {
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_SUFFIXES = new Set([".pdf", ".txt", ".md", ".markdown"]);
+const COLLAPSED_SKILL_COUNT = 8;
 
 function fileSuffix(name: string): string {
   const lower = name.trim().toLowerCase();
@@ -26,7 +27,11 @@ function isAllowedResumeFile(file: File): boolean {
   return ALLOWED_SUFFIXES.has(fileSuffix(file.name));
 }
 
-export function SkillsCard() {
+export function SkillsCard({
+  onSkillsChanged,
+}: {
+  onSkillsChanged?: (names: string[]) => void;
+}) {
   const [skills, setSkills] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +40,10 @@ export function SkillsCard() {
   const [parsing, setParsing] = useState(false);
   const [extracted, setExtracted] = useState<string[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [showAllSkills, setShowAllSkills] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onSkillsChangedRef = useRef(onSkillsChanged);
+  onSkillsChangedRef.current = onSkillsChanged;
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +52,7 @@ export function SkillsCard() {
         const names = await getOwnedSkills();
         if (!cancelled) {
           setSkills(names);
+          onSkillsChangedRef.current?.(names);
           setError(null);
         }
       } catch (err) {
@@ -68,6 +77,7 @@ export function SkillsCard() {
     try {
       const saved = await saveOwnedSkills(next);
       setSkills(saved);
+      onSkillsChangedRef.current?.(saved);
       return true;
     } catch (err) {
       setError(
@@ -101,13 +111,14 @@ export function SkillsCard() {
 
   async function handleClearAll() {
     const ok = window.confirm(
-      `Remove all ${skills.length} saved skills? The next job you analyze will treat you as having none until you add skills again.`,
+      `Remove all ${skills.length} saved skills? The gap on this page will refresh against an empty list. Other tracked jobs keep their last analyze until you analyze them again.`,
     );
     if (!ok) return;
     const cleared = await persist([]);
     if (cleared) {
       setExtracted([]);
       setChecked(new Set());
+      setShowAllSkills(false);
     }
   }
 
@@ -163,6 +174,7 @@ export function SkillsCard() {
     try {
       const saved = await addOwnedSkills(selected);
       setSkills(saved);
+      onSkillsChangedRef.current?.(saved);
       setExtracted([]);
       setChecked(new Set());
     } catch (err) {
@@ -176,11 +188,16 @@ export function SkillsCard() {
 
   const selectedCount = extracted.filter((name) => checked.has(name)).length;
   const busy = saving || parsing;
+  const emptyList = !loading && skills.length === 0;
+  const visibleSkills =
+    showAllSkills || skills.length <= COLLAPSED_SKILL_COUNT
+      ? skills
+      : skills.slice(0, COLLAPSED_SKILL_COUNT);
 
   return (
     <Card>
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
-        <h2 className="font-serif text-2xl text-navy">Your skills</h2>
+        <h3 className="font-serif text-2xl text-navy">Your skills</h3>
         {!loading && skills.length > 0 ? (
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <p className="text-sm text-ink-muted">{skills.length} saved</p>
@@ -197,8 +214,11 @@ export function SkillsCard() {
         ) : null}
       </div>
       <p className="mt-2 text-sm text-ink-muted">
-        We match these against each job you paste.
+        Each job is compared to this list and to your latest uploaded resume —
+        even for skills you did not tag, such as Computer Vision from OpenCV
+        work.
       </p>
+
       {loading ? (
         <div className="mt-6">
           <p className="sr-only">Loading skills…</p>
@@ -213,57 +233,7 @@ export function SkillsCard() {
         </div>
       ) : (
         <>
-          <ul className="mt-6 flex flex-wrap gap-2">
-            {skills.length === 0 ? (
-              <li className="max-w-prose text-sm text-ink-muted">
-                No skills yet — type one, or upload a resume.
-              </li>
-            ) : (
-              skills.map((name) => (
-                <li
-                  key={name}
-                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-line bg-canvas py-1 pl-3 pr-1 text-sm text-ink"
-                >
-                  <span className="min-w-0 break-words">{name}</span>
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-muted hover:bg-accent-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    onClick={() => void handleRemove(name)}
-                    disabled={busy}
-                    aria-busy={saving}
-                    aria-label={`Remove ${name}`}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-          <form
-            className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end"
-            onSubmit={(e) => void handleAdd(e)}
-          >
-            <div className="flex-1">
-              <Input
-                id="new-skill"
-                label="Add a skill"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder="e.g. Python"
-                maxLength={80}
-                disabled={busy}
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full sm:w-auto"
-              disabled={busy || !draft.trim()}
-              aria-busy={saving}
-            >
-              {saving && extracted.length === 0 ? "Saving…" : "Add"}
-            </Button>
-          </form>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               ref={fileInputRef}
               id="resume-file"
@@ -275,7 +245,7 @@ export function SkillsCard() {
             />
             <Button
               type="button"
-              variant="secondary"
+              variant={emptyList ? "primary" : "secondary"}
               className="w-full sm:w-auto"
               disabled={busy}
               aria-busy={parsing}
@@ -284,18 +254,21 @@ export function SkillsCard() {
               {parsing ? "Reading resume…" : "Upload resume"}
             </Button>
             <p className="text-sm text-ink-muted">
-              PDF or text, max 5 MB. Review before we save.
+              Fastest way to start. PDF or text, max 5 MB. Review before we
+              save.
             </p>
           </div>
+
           {extracted.length > 0 ? (
-            <div className="mt-6 flex flex-col gap-4">
+            <div className="mt-6 flex flex-col gap-4 rounded-md border border-line bg-canvas p-4">
               <p className="text-sm text-ink">
-                From your resume — uncheck anything that is not you.
+                From your resume — uncheck anything that is not you, then add
+                them to your list.
               </p>
               <ul className="flex flex-wrap gap-2">
                 {extracted.map((name) => (
                   <li key={name} className="min-w-0">
-                    <label className="inline-flex max-w-full cursor-pointer items-center gap-2 rounded-md border border-line bg-canvas px-3 py-1 text-sm text-ink">
+                    <label className="inline-flex max-w-full cursor-pointer items-center gap-2 rounded-md border border-line bg-surface px-3 py-1 text-sm text-ink">
                       <input
                         type="checkbox"
                         className="h-4 w-4 shrink-0 accent-accent"
@@ -319,6 +292,73 @@ export function SkillsCard() {
               </Button>
             </div>
           ) : null}
+
+          <form
+            className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end"
+            onSubmit={(e) => void handleAdd(e)}
+          >
+            <div className="flex-1">
+              <Input
+                id="new-skill"
+                label="Or type a skill"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder="e.g. Python"
+                maxLength={80}
+                disabled={busy}
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={busy || !draft.trim()}
+              aria-busy={saving}
+            >
+              {saving && extracted.length === 0 ? "Saving…" : "Add"}
+            </Button>
+          </form>
+
+          {skills.length === 0 ? (
+            <p className="mt-6 text-sm text-ink-muted">
+              No skills on your list yet. You can still paste a job — we will
+              also use your resume if you uploaded one.
+            </p>
+          ) : (
+            <>
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {visibleSkills.map((name) => (
+                  <li
+                    key={name}
+                    className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-md border border-line bg-canvas py-1 pl-3 pr-1 text-sm text-ink"
+                  >
+                    <span className="min-w-0 break-words">{name}</span>
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-muted hover:bg-accent-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      onClick={() => void handleRemove(name)}
+                      disabled={busy}
+                      aria-busy={saving}
+                      aria-label={`Remove ${name}`}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {skills.length > COLLAPSED_SKILL_COUNT ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="mt-3 w-full sm:w-auto"
+                  onClick={() => setShowAllSkills((open) => !open)}
+                >
+                  {showAllSkills
+                    ? "Show less"
+                    : `Show all ${skills.length}`}
+                </Button>
+              ) : null}
+            </>
+          )}
         </>
       )}
       {error ? (

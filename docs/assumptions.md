@@ -27,7 +27,7 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 | Embedding model | Local ONNX MiniLM (`all-MiniLM-L6-v2`), 384 dimensions. No extra embedding API key |
 | Similarity | pgvector cosine distance (`<=>`) |
 | top-k | **3** for quiz generation (`POST /quiz/generate`) |
-| Similarity threshold | Keep chunks with cosine distance `<= 0.90`. If all are higher but the user has vectors, use the nearest chunk. Empty embeddings still 422 |
+| Similarity threshold | Keep a chunk if the gap skill matches the note **title or chunk** (`skills_match`), or cosine distance `<= 0.45`. Never fall back to the nearest unrelated note. No matching chunks → 422 (skip Groq) |
 | Retrieval | Dense only; user-scoped `embeddings` joined to `notes.user_id` |
 | Notes formats | PDF, Markdown, plain text |
 | Model cache | `EMBED_CACHE` (default `backend/embed_cache`). Ephemeral on Render; vectors live in Postgres |
@@ -39,6 +39,20 @@ Documented so they are not invented ad hoc in code. Revisit after measurement.
 - Then match if phrases are equal, one phrase is contained in the other (remainder empty, `s`/`es`, or a suffix word), token plurals (`api`/`apis`), or `difflib.SequenceMatcher` ratio ≥ 0.86.
 - `React` matches `react`. `REST APIs` matches `REST API design`. `Java` does **not** match `JavaScript` (remainder `script`).
 - Embeddings / semantic match for leftover cases stay later.
+
+## Dashboard gap vs live skills
+
+- `skills_owned` is the live profile. The dashboard gap for the **current** JD is derived: when the user adds, removes, or clears skills, refresh that JD with `POST /gaps/compute` (no JD re-parse / Groq). Other JDs keep their last compute until the user analyzes them again.
+- An empty owned list is an intentional 100% gap: keep the missing column. Copy must say the list is empty, not that we measured they lack each skill. Zero overlap with a non-empty list uses different copy.
+- Last dashboard analysis in `sessionStorage` is keyed by user id. A 403/404 on that JD discards the snapshot so Interview Prep cannot show another account’s job.
+- When a resume is stored, leftover name-mismatches get a secondary check: cheap phrase/token match in `resumes.raw_text` (single-token skills use word-ish bounds so Git ≠ GitHub), then cached Groq quotes (same verbatim substring gate as match-score). Verified hits are stored as `gap_level = none` with `match_source = resume`. Skill-list refreshes reuse `resume_skill_evidence` and do not call Groq. Quiz and interview-prep only read `gaps`; they do not run this check.
+- `POST /gaps/compute` also returns the weighted `score` / `matched_count` / `total_count` (same Python formula as match-score). The dashboard shows that fit immediately. Groq rewrite suggestions stay opt-in.
+
+## Resume–JD match score
+
+- The percentage is computed in Python from already-saved `gaps` plus `skills_required.importance`. Matched gaps store `gap_level = "none"`, so importance always comes from `skills_required` (unknown → `required`). Required skills weigh 1.0, nice-to-have 0.5. Groq never produces this number.
+- Rewrite suggestions are only for **missing** skills. Each `original_quote` must be a lowercase, whitespace-collapsed substring of the caller’s latest `resumes.raw_text`. Failed checks are dropped and counted in logs (`dropped_hallucinated`). Null quotes (nothing related in the resume) are omitted from the API response.
+- No resume row → 422; do not score from manually typed skills alone.
 
 ## Auth on the frontend
 
