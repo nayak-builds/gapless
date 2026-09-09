@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f4f1ea;
+  --foreground: #1c1917;
+}
+
+html {
+  overflow-x: clip;
+}
+
+body {
+  color: theme("colors.ink.DEFAULT");
+  background: theme("colors.canvas");
+  font-family: theme("fontFamily.sans");
+}
